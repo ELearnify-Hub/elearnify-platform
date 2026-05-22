@@ -40,12 +40,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
-// We'll uncomment these as we build each part
-
-// app.use('/api/auth', require('./routes/authRoutes'));
-// app.use('/api/courses', require('./routes/courseRoutes'));
-// app.use('/api/enrollments', require('./routes/enrollmentRoutes'));
-
+app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/courses', require('./routes/courseRoutes'));
+app.use('/api/enrollments', require('./routes/enrollmentRoutes'));
 // ─── Health Check Route ───────────────────────────────────────────────────────
 // A simple GET route to confirm the server is running
 // Test it by visiting: http://localhost:5000/api/health
