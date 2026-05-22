@@ -1,1 +1,92 @@
- 
+ // services/api.js
+// Central Axios configuration — all API calls go through here
+// Think of this as your "remote control" for the backend
+
+import axios from 'axios';
+
+// ─── Create Axios Instance ────────────────────────────────────────────────────
+// Instead of typing the full URL every time, we set a base URL once
+const API = axios.create({
+  baseURL: 'http://localhost:5000/api',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+// ─── Request Interceptor ──────────────────────────────────────────────────────
+// This runs BEFORE every request is sent
+// It automatically attaches the JWT token to every request
+// So we don't have to manually add headers in every API call
+
+API.interceptors.request.use(
+  (config) => {
+    // Get token from localStorage (we store it there after login)
+    const token = localStorage.getItem('token');
+
+    if (token) {
+      // Attach token to Authorization header
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// ─── Response Interceptor ─────────────────────────────────────────────────────
+// This runs AFTER every response is received
+// If the server returns 401 (Unauthorized), the token has expired
+// → Automatically log the user out
+
+API.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token expired or invalid — clear storage and redirect to login
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+// ─── Auth API Calls ───────────────────────────────────────────────────────────
+export const authAPI = {
+  register: (data) => API.post('/auth/register', data),
+  login: (data) => API.post('/auth/login', data),
+  getProfile: () => API.get('/auth/profile'),
+  getAllStudents: () => API.get('/auth/students')
+};
+
+// ─── Course API Calls ─────────────────────────────────────────────────────────
+export const courseAPI = {
+  getAll: (params) => API.get('/courses', { params }),
+  getById: (id) => API.get(`/courses/${id}`),
+
+  // For file uploads we use FormData, not JSON
+  // So we override Content-Type to let browser set multipart boundary
+  create: (formData) => API.post('/courses', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  update: (id, formData) => API.put(`/courses/${id}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  delete: (id) => API.delete(`/courses/${id}`),
+  uploadVideo: (id, formData) => API.post(`/courses/${id}/upload-video`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  uploadPDF: (id, formData) => API.post(`/courses/${id}/upload-pdf`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  togglePublish: (id) => API.put(`/courses/${id}/publish`)
+};
+
+// ─── Enrollment API Calls ─────────────────────────────────────────────────────
+export const enrollmentAPI = {
+  enroll: (courseId) => API.post(`/enrollments/${courseId}`),
+  unenroll: (courseId) => API.delete(`/enrollments/${courseId}`),
+  getMyCourses: () => API.get('/enrollments/my-courses')
+};
+
+export default API;

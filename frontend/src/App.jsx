@@ -1,42 +1,53 @@
-// App.jsx — Main Router Configuration
-// This file defines all the URL routes in our application
-
+// App.jsx
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 // Pages
-import HomePage from './pages/HomePage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import CoursesPage from './pages/CoursesPage';
+import HomePage         from './pages/HomePage';
+import LoginPage        from './pages/LoginPage';
+import RegisterPage     from './pages/RegisterPage';
+import CoursesPage      from './pages/CoursesPage';
 import CourseDetailPage from './pages/CourseDetailPage';
-import MyCoursesPage from './pages/MyCoursesPage';
-import AdminDashboard from './pages/AdminDashboard';
+import MyCoursesPage    from './pages/MyCoursesPage';
+import AdminDashboard   from './pages/AdminDashboard';
 
 // Components
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
+import Navbar           from './components/Navbar';
+import Footer           from './components/Footer';
+import ProtectedRoute   from './components/ProtectedRoute';
 
 function App() {
   return (
     <Router>
-      {/* Navbar appears on every page */}
-      <Navbar />
+      <div className="flex flex-col min-h-screen">
+        <Navbar />
 
-      {/* Main content area */}
-      <main className="min-h-screen bg-gray-50">
-        <Routes>
-          <Route path="/"               element={<HomePage />} />
-          <Route path="/login"          element={<LoginPage />} />
-          <Route path="/register"       element={<RegisterPage />} />
-          <Route path="/courses"        element={<CoursesPage />} />
-          <Route path="/courses/:id"    element={<CourseDetailPage />} />
-          <Route path="/my-courses"     element={<MyCoursesPage />} />
-          <Route path="/admin"          element={<AdminDashboard />} />
-        </Routes>
-      </main>
+        <main className="flex-grow bg-gray-50">
+          <Routes>
+            {/* Public Routes — anyone can visit */}
+            <Route path="/"            element={<HomePage />} />
+            <Route path="/login"       element={<LoginPage />} />
+            <Route path="/register"    element={<RegisterPage />} />
+            <Route path="/courses"     element={<CoursesPage />} />
+            <Route path="/courses/:id" element={<CourseDetailPage />} />
 
-      {/* Footer appears on every page */}
-      <Footer />
+            {/* Protected — logged-in students only */}
+            <Route path="/my-courses" element={
+              <ProtectedRoute>
+                <MyCoursesPage />
+              </ProtectedRoute>
+            } />
+
+            {/* Protected — admins only */}
+            <Route path="/admin" element={
+              <ProtectedRoute adminOnly>
+                <AdminDashboard />
+              </ProtectedRoute>
+            } />
+          </Routes>
+        </main>
+
+        <Footer />
+      </div>
     </Router>
   );
 }

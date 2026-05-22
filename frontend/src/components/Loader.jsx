@@ -1,6 +1,11 @@
-const Loader = () => (
-  <div className="flex justify-center items-center py-10">
-    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-  </div>
-);
+// components/Loader.jsx — Reusable loading spinner
+const Loader = ({ text = 'Loading...' }) => {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 gap-4">
+      <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
+      <p className="text-gray-500 text-sm">{text}</p>
+    </div>
+  );
+};
+
 export default Loader;
