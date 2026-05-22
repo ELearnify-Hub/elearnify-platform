@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Environment Variables (NEVER commit these)
+.env
+.env.local
+.env.production
+
+# Build output
+dist/
+build/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Uploads (local files, not for Git)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Logs
+*.log
+npm-debug.log*

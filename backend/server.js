@@ -1,0 +1,84 @@
+// server.js — Entry point of our Express application
+
+// Load environment variables from .env file FIRST
+// This must be the very first line before any other imports
+const dotenv = require('dotenv');
+dotenv.config();
+
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
+
+// Import our database connection function (we'll create this next)
+const connectDB = require('./config/db');
+
+// Initialize Express application
+const app = express();
+
+// ─── Connect to MongoDB ───────────────────────────────────────────────────────
+connectDB();
+
+// ─── Middleware Setup ─────────────────────────────────────────────────────────
+
+// CORS: Allows our React app (running on port 5173) to make requests
+// to this server (running on port 5000)
+app.use(cors({
+  origin: 'http://localhost:5173',
+  credentials: true
+}));
+
+// Parse incoming JSON request bodies
+// Without this, req.body would be undefined
+app.use(express.json());
+
+// Parse URL-encoded form data
+app.use(express.urlencoded({ extended: true }));
+
+// Serve uploaded files statically
+// This means files in /uploads folder are accessible via URL
+// e.g., http://localhost:5000/uploads/video.mp4
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// ─── Routes ───────────────────────────────────────────────────────────────────
+// We'll uncomment these as we build each part
+
+// app.use('/api/auth', require('./routes/authRoutes'));
+// app.use('/api/courses', require('./routes/courseRoutes'));
+// app.use('/api/enrollments', require('./routes/enrollmentRoutes'));
+
+// ─── Health Check Route ───────────────────────────────────────────────────────
+// A simple GET route to confirm the server is running
+// Test it by visiting: http://localhost:5000/api/health
+app.get('/api/health', (req, res) => {
+  res.json({
+    success: true,
+    message: 'E-Learning API is running!',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// ─── 404 Handler ─────────────────────────────────────────────────────────────
+// If no route matches, send a 404 response
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `Route ${req.originalUrl} not found`
+  });
+});
+
+// ─── Global Error Handler ─────────────────────────────────────────────────────
+// Catches any errors thrown in route handlers
+app.use((err, req, res, next) => {
+  console.error('Error:', err.message);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'Internal Server Error'
+  });
+});
+
+// ─── Start Server ─────────────────────────────────────────────────────────────
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`\n🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  console.log(`📡 API Health Check: http://localhost:${PORT}/api/health\n`);
+});
