@@ -22,7 +22,9 @@ const getAllCourses = async (req, res) => {
     } = req.query;
 
     // Build a dynamic filter object
-    let filter = { isPublished: true };
+    // If admin is requesting, show all courses including drafts
+    // req.user is set by protect middleware (undefined for public requests)
+    let filter = req.user?.role === 'admin' ? {} : { isPublished: true };
 
     // If search term provided, use MongoDB text search
     if (search) {

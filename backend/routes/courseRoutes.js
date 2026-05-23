@@ -18,7 +18,27 @@ const { protect, adminOnly } = require('../middleware/auth');
 const { uploadThumbnail, uploadVideo: multerVideo, uploadPDF: multerPDF } = require('../middleware/upload');
 
 // ─── Public Routes ────────────────────────────────────────────────────────────
-router.get('/', getAllCourses);
+const optionalAuth = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer')) {
+    const jwt = require('jsonwebtoken');
+    const User = require('../models/User');
+    try {
+      const token = authHeader.split(' ')[1];
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      User.findById(decoded.id).select('-password').then(user => {
+        req.user = user;
+        next();
+      });
+    } catch {
+      next(); // Invalid token — treat as public
+    }
+  } else {
+    next(); // No token — treat as public
+  }
+};
+
+router.get('/', optionalAuth, getAllCourses);
 router.get('/:id', getCourseById);
 
 // ─── Admin Routes ─────────────────────────────────────────────────────────────
