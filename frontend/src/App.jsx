@@ -11,6 +11,8 @@ import Navbar           from './components/Navbar';
 import Footer           from './components/Footer';
 import ProtectedRoute   from './components/ProtectedRoute';
 import { useAuth }      from './context/AuthContext';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage  from './pages/ResetPasswordPage';
 
 // Pages that use the DashboardLayout don't need Navbar/Footer
 const DASHBOARD_PATHS = ['/dashboard', '/admin', '/my-courses', '/profile'];
@@ -34,6 +36,8 @@ function App() {
             <Route path="/register"    element={<RegisterPage />} />
             <Route path="/courses"     element={<CoursesPage />} />
             <Route path="/courses/:id" element={<CourseDetailPage />} />
+            <Route path="/forgot-password"       element={<ForgotPasswordPage />} />
+            <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
             {/* Student dashboard */}
             <Route path="/dashboard" element={

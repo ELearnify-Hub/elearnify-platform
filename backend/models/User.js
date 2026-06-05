@@ -57,6 +57,20 @@ const userSchema = new mongoose.Schema(
     createdAt: {
       type: Date,
       default: Date.now
+    },
+
+    passwordResetToken: {
+      type: String,
+      default: null,
+      // We store the HASHED token here — never the plain token
+      // Same security principle as passwords
+    },
+
+    passwordResetExpires: {
+      type: Date,
+      default: null
+      // Stores when the token expires
+      // We check: is current time BEFORE this date?
     }
   },
   {

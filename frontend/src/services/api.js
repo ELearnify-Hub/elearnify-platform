@@ -4,10 +4,14 @@
 
 import axios from 'axios';
 
+// ─── Server URL ──────────────────────────────────────────────────────────────
+// Used for constructing image URLs and file paths from the server
+export const SERVER_URL = 'http://localhost:5000';
+
 // ─── Create Axios Instance ────────────────────────────────────────────────────
 // Instead of typing the full URL every time, we set a base URL once
 const API = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: `${SERVER_URL}/api`, 
   headers: {
     'Content-Type': 'application/json'
   }
@@ -51,14 +55,6 @@ API.interceptors.response.use(
   }
 );
 
-// ─── Auth API Calls ───────────────────────────────────────────────────────────
-export const authAPI = {
-  register: (data) => API.post('/auth/register', data),
-  login: (data) => API.post('/auth/login', data),
-  getProfile: () => API.get('/auth/profile'),
-  getAllStudents: () => API.get('/auth/students')
-};
-
 // ─── Course API Calls ─────────────────────────────────────────────────────────
 export const courseAPI = {
   getAll: (params) => API.get('/courses', { params }),
@@ -87,6 +83,18 @@ export const enrollmentAPI = {
   enroll: (courseId) => API.post(`/enrollments/${courseId}`),
   unenroll: (courseId) => API.delete(`/enrollments/${courseId}`),
   getMyCourses: () => API.get('/enrollments/my-courses')
+};
+
+export const authAPI = {
+  register:         (data)         => API.post('/auth/register', data),
+  login:            (data)         => API.post('/auth/login',    data),
+  getProfile:       ()             => API.get('/auth/profile'),
+  getAllStudents:    ()             => API.get('/auth/students'),
+
+  // ── Password Reset (NEW) ───────────────────────────────────
+  forgotPassword:   (data)         => API.post('/auth/forgot-password',          data),
+  verifyResetToken: (token)        => API.get(`/auth/verify-reset-token/${token}`),
+  resetPassword:    (token, data)  => API.post(`/auth/reset-password/${token}`,  data)
 };
 
 export default API;

@@ -1,5 +1,10 @@
  // controllers/authController.js
 // Contains the business logic for: Register, Login, Get Profile
+const crypto = require('crypto');  // Built into Node.js — no install needed
+const {
+  sendPasswordResetEmail,
+  sendWelcomeEmail
+} = require('../utils/emailService');
 
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
@@ -55,6 +60,12 @@ const register = async (req, res) => {
 
     // Step 5: Generate JWT token for immediate login after registration
     const token = generateToken(user._id);
+    // Send welcome email without blocking the response
+    // .catch() ensures email errors don't crash the registration
+    sendWelcomeEmail({
+      toEmail:  user.email,
+      userName: user.name
+    }).catch(err => console.error('Welcome email error:', err.message));
 
     // Step 6: Send response
     // We manually build the response to avoid sending sensitive fields
@@ -214,9 +225,192 @@ const getAllStudents = async (req, res) => {
   }
 };
 
+// ─── @route   POST /api/auth/forgot-password ──────────────────────────────────
+// @desc    Generate reset token and send email
+// @access  Public
+
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide your email address'
+      });
+    }
+
+    // Find user — but ALWAYS return same response whether found or not
+    // This prevents "email enumeration attacks"
+    // (attacker trying to find which emails are registered)
+    const user = await User.findOne({ email: email.toLowerCase() });
+
+    const genericResponse = {
+      success: true,
+      message: 'If an account exists with this email, a reset link has been sent.'
+    };
+
+    if (!user) {
+      // Don't reveal that email doesn't exist
+      return res.status(200).json(genericResponse);
+    }
+
+    // ── Generate secure random token ──────────────────────────────────────────
+    // crypto.randomBytes(32) = 32 random bytes = 256 bits of entropy
+    // Practically impossible to guess or brute force
+    const resetToken = crypto.randomBytes(32).toString('hex');
+
+    // ── Hash before saving to database ────────────────────────────────────────
+    // If DB is ever breached, attacker gets only hashes — useless without plain token
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(resetToken)
+      .digest('hex');
+
+    // ── Save to user document ─────────────────────────────────────────────────
+    user.passwordResetToken   = hashedToken;
+    user.passwordResetExpires = Date.now() + 10 * 60 * 1000; // 10 minutes from now
+    await user.save({ validateBeforeSave: false });
+    // validateBeforeSave: false = skip field validation
+    // (we're only updating reset fields, not changing name/email/password)
+
+    // ── Build reset URL ───────────────────────────────────────────────────────
+    // Plain token goes in URL — NOT the hashed version
+    // User clicks → we hash the URL token → compare with DB hash
+    const resetURL = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+
+    // ── Send email ────────────────────────────────────────────────────────────
+    try {
+      await sendPasswordResetEmail({
+        toEmail:  user.email,
+        userName: user.name,
+        resetURL
+      });
+      res.status(200).json(genericResponse);
+
+    } catch (emailError) {
+      // Email failed — clean up the saved token so it can't be exploited
+      user.passwordResetToken   = null;
+      user.passwordResetExpires = null;
+      await user.save({ validateBeforeSave: false });
+
+      console.error('Reset email send error:', emailError.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to send reset email. Please try again later.'
+      });
+    }
+
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+// ─── @route   GET /api/auth/verify-reset-token/:token ────────────────────────
+// @desc    Check if token is valid BEFORE showing the reset form
+// @access  Public
+
+const verifyResetToken = async (req, res) => {
+  try {
+    // Hash the token from URL and look it up in DB
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(req.params.token)
+      .digest('hex');
+
+    const user = await User.findOne({
+      passwordResetToken:   hashedToken,
+      passwordResetExpires: { $gt: Date.now() }
+      // $gt: Date.now() → "expiry time is in the future" = not expired
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Reset link is invalid or has expired.'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Token is valid',
+      email:   user.email  // We show this on the reset page so user knows which account
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+// ─── @route   POST /api/auth/reset-password/:token ───────────────────────────
+// @desc    Set the new password
+// @access  Public
+
+const resetPassword = async (req, res) => {
+  try {
+    const { token }    = req.params;
+    const { password } = req.body;
+
+    if (!password || password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters'
+      });
+    }
+
+    // ── Find user by hashed token that hasn't expired ─────────────────────────
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
+
+    const user = await User.findOne({
+      passwordResetToken:   hashedToken,
+      passwordResetExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Reset link is invalid or has expired. Please request a new one.'
+      });
+    }
+
+    // ── Update password ───────────────────────────────────────────────────────
+    // The pre-save hook in User.js auto-hashes this
+    user.password             = password;
+    user.passwordResetToken   = null;  // Delete token — one-time use
+    user.passwordResetExpires = null;
+    await user.save();
+
+    // ── Auto-login after reset ────────────────────────────────────────────────
+    const jwtToken = generateToken(user._id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Password reset successful!',
+      token:   jwtToken,
+      user: {
+        _id:   user._id,
+        name:  user.name,
+        email: user.email,
+        role:  user.role
+      }
+    });
+
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 module.exports = {
   register,
   login,
   getProfile,
-  getAllStudents
+  getAllStudents,
+  forgotPassword,     // ← ADD
+  verifyResetToken,   // ← ADD
+  resetPassword       // ← ADD
 };
