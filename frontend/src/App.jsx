@@ -1,7 +1,4 @@
-// App.jsx
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-
-// Pages
 import HomePage         from './pages/HomePage';
 import LoginPage        from './pages/LoginPage';
 import RegisterPage     from './pages/RegisterPage';
@@ -9,44 +6,51 @@ import CoursesPage      from './pages/CoursesPage';
 import CourseDetailPage from './pages/CourseDetailPage';
 import MyCoursesPage    from './pages/MyCoursesPage';
 import AdminDashboard   from './pages/AdminDashboard';
-
-// Components
+import StudentDashboard from './pages/StudentDashboard';
 import Navbar           from './components/Navbar';
 import Footer           from './components/Footer';
 import ProtectedRoute   from './components/ProtectedRoute';
+import { useAuth }      from './context/AuthContext';
+
+// Pages that use the DashboardLayout don't need Navbar/Footer
+const DASHBOARD_PATHS = ['/dashboard', '/admin', '/my-courses', '/profile'];
 
 function App() {
+  const { isLoggedIn } = useAuth();
+  const isDashboard = DASHBOARD_PATHS.some(p =>
+    window.location.pathname.startsWith(p)
+  );
+
   return (
     <Router>
       <div className="flex flex-col min-h-screen">
-        <Navbar />
+        {!isDashboard && <Navbar />}
 
-        <main className="flex-grow bg-gray-50">
+        <main className={isDashboard ? '' : 'flex-grow bg-gray-50 dark:bg-gray-950'}>
           <Routes>
-            {/* Public Routes — anyone can visit */}
+            {/* Public */}
             <Route path="/"            element={<HomePage />} />
             <Route path="/login"       element={<LoginPage />} />
             <Route path="/register"    element={<RegisterPage />} />
             <Route path="/courses"     element={<CoursesPage />} />
             <Route path="/courses/:id" element={<CourseDetailPage />} />
 
-            {/* Protected — logged-in students only */}
+            {/* Student dashboard */}
+            <Route path="/dashboard" element={
+              <ProtectedRoute><StudentDashboard /></ProtectedRoute>
+            } />
             <Route path="/my-courses" element={
-              <ProtectedRoute>
-                <MyCoursesPage />
-              </ProtectedRoute>
+              <ProtectedRoute><MyCoursesPage /></ProtectedRoute>
             } />
 
-            {/* Protected — admins only */}
+            {/* Admin dashboard */}
             <Route path="/admin" element={
-              <ProtectedRoute adminOnly>
-                <AdminDashboard />
-              </ProtectedRoute>
+              <ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>
             } />
           </Routes>
         </main>
 
-        <Footer />
+        {!isDashboard && <Footer />}
       </div>
     </Router>
   );
