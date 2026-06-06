@@ -22,7 +22,7 @@ const CourseCard = ({ course }) => {
   } = course;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden flex flex-col">
+    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden flex flex-col">
 
       {/* Thumbnail */}
       <div className="relative">
@@ -61,17 +61,17 @@ const CourseCard = ({ course }) => {
         </div>
 
         {/* Title */}
-        <h3 className="font-bold text-gray-800 text-base mb-1 line-clamp-2 leading-snug">
+        <h3 className="font-bold text-gray-900 dark:text-white text-base mb-1 line-clamp-2 leading-snug">
           {title}
         </h3>
 
         {/* Description */}
-        <p className="text-gray-500 text-sm mb-3 line-clamp-2 flex-grow">
+        <p className="text-gray-500 dark:text-gray-400 text-sm mb-3 line-clamp-2 flex-grow">
           {description}
         </p>
 
         {/* Meta info */}
-        <div className="text-xs text-gray-400 flex flex-col gap-1 mb-4">
+        <div className="text-xs text-gray-400 dark:text-gray-500 flex flex-col gap-1 mb-4">
           <span>👨‍🏫 {instructor}</span>
           {duration && <span>⏱ {duration}</span>}
           <span>👥 {enrolledStudents.length} students enrolled</span>

@@ -28,9 +28,11 @@ const enrollInCourse = async (req, res) => {
       });
     }
 
-    // Check if already enrolled
+    // Check if already enrolled - convert to string for comparison
     const user = await User.findById(userId);
-    const alreadyEnrolled = user.enrolledCourses.includes(courseId);
+    const alreadyEnrolled = user.enrolledCourses.some(id => 
+      id.toString() === courseId.toString()
+    );
 
     if (alreadyEnrolled) {
       return res.status(400).json({
@@ -40,15 +42,16 @@ const enrollInCourse = async (req, res) => {
     }
 
     // Add course to user's enrolledCourses array
-    await User.findByIdAndUpdate(userId, {
+    const updatedUser = await User.findByIdAndUpdate(userId, {
       $addToSet: { enrolledCourses: courseId } // $addToSet prevents duplicates
-    });
+    }, { new: true });
 
     // Add user to course's enrolledStudents array
     await Course.findByIdAndUpdate(courseId, {
       $addToSet: { enrolledStudents: userId }
     });
 
+    console.log(`User ${userId} enrolled in course ${courseId}`);
     res.status(200).json({
       success: true,
       message: `Successfully enrolled in "${course.title}"`
@@ -72,8 +75,18 @@ const getMyEnrolledCourses = async (req, res) => {
     const user = await User.findById(req.user._id)
       .populate({
         path: 'enrolledCourses',
-        select: 'title description thumbnail instructor category level duration'
+        select: '_id title description thumbnail instructor category level duration price isPublished enrolledStudents'
       });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    console.log(`Fetched ${user.enrolledCourses.length} courses for user ${req.user._id}`);
+    console.log('Enrolled courses:', user.enrolledCourses);
 
     res.status(200).json({
       success: true,

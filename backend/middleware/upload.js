@@ -1,74 +1,70 @@
- // middleware/upload.js — Multer File Upload Configuration
-// Multer is middleware that handles multipart/form-data
-// (the format used for file uploads in HTML forms)
-
+// middleware/upload.js
 const multer = require('multer');
-const path = require('path');
+const path   = require('path');
 
-// ─── Storage Configuration ────────────────────────────────────────────────────
-// diskStorage tells Multer: "Save files to disk (not memory)"
-
+// ── Shared storage config ─────────────────────────────────────────────────────
 const storage = multer.diskStorage({
-  // destination: which folder to save uploaded files
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/');  // Save to the uploads/ directory
-  },
-
-  // filename: what to name the saved file
-  filename: function (req, file, cb) {
-    // Create a unique filename: fieldname-timestamp.extension
-    // Example: video-1712345678900.mp4
-    // Without this, uploading two "video.mp4" files would overwrite each other
-    const uniqueName = `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`;
-    cb(null, uniqueName);
+  destination: (req, file, cb) => cb(null, 'uploads/'),
+  filename:    (req, file, cb) => {
+    const unique = `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`;
+    cb(null, unique);
   }
 });
 
-// ─── File Filter ──────────────────────────────────────────────────────────────
-// Validates file type BEFORE saving
-// Rejects files that don't match our allowed types
-
-const fileFilter = (req, file, cb) => {
-  // Define allowed MIME types for each category
-  const imageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-  const videoTypes = ['video/mp4', 'video/mpeg', 'video/quicktime', 'video/webm'];
-  const pdfTypes = ['application/pdf'];
-
-  const allowed = [...imageTypes, ...videoTypes, ...pdfTypes];
-
-  if (allowed.includes(file.mimetype)) {
-    cb(null, true);   // Accept the file
-  } else {
-    cb(new Error(`File type ${file.mimetype} is not allowed`), false);
-  }
+// ── File filter ───────────────────────────────────────────────────────────────
+const imageFilter = (req, file, cb) => {
+  const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+  allowed.includes(file.mimetype) ? cb(null, true) : cb(new Error('Images only'), false);
 };
 
-// ─── Size Limits ──────────────────────────────────────────────────────────────
-const limits = {
-  fileSize: 100 * 1024 * 1024  // 100MB max file size
+const videoFilter = (req, file, cb) => {
+  const allowed = ['video/mp4', 'video/mpeg', 'video/quicktime', 'video/webm'];
+  allowed.includes(file.mimetype) ? cb(null, true) : cb(new Error('Videos only'), false);
 };
 
-// ─── Export Configured Multer Instances ───────────────────────────────────────
+const pdfFilter = (req, file, cb) => {
+  file.mimetype === 'application/pdf' ? cb(null, true) : cb(new Error('PDFs only'), false);
+};
 
-// For thumbnail images
+const lessonFilter = (req, file, cb) => {
+  const allowed = [
+    'video/mp4', 'video/mpeg', 'video/webm', 'video/quicktime',
+    'application/pdf'
+  ];
+  allowed.includes(file.mimetype) ? cb(null, true) : cb(new Error('Video or PDF only'), false);
+};
+
+// ── Multer instances ──────────────────────────────────────────────────────────
 const uploadThumbnail = multer({
   storage,
-  fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB for images
+  fileFilter: imageFilter,
+  limits: { fileSize: 5   * 1024 * 1024 }  // 5MB
 });
 
-// For video files
 const uploadVideo = multer({
   storage,
-  fileFilter,
-  limits: { fileSize: 100 * 1024 * 1024 } // 100MB for videos
+  fileFilter: videoFilter,
+  limits: { fileSize: 100 * 1024 * 1024 }  // 100MB
 });
 
-// For PDF files
 const uploadPDF = multer({
   storage,
-  fileFilter,
-  limits: { fileSize: 20 * 1024 * 1024 } // 20MB for PDFs
+  fileFilter: pdfFilter,
+  limits: { fileSize: 20  * 1024 * 1024 }  // 20MB
 });
 
-module.exports = { uploadThumbnail, uploadVideo, uploadPDF };
+// Used for lesson file uploads (video OR pdf)
+const uploadLesson = multer({
+  storage,
+  fileFilter: lessonFilter,
+  limits: { fileSize: 100 * 1024 * 1024 }  // 100MB
+});
+
+// Export storage so other files can reference it
+module.exports = {
+  uploadThumbnail,
+  uploadVideo,
+  uploadPDF,
+  uploadLesson,
+  storage         // ← exported so moduleRoutes can reference it
+};

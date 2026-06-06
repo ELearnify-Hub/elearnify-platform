@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import ThemeToggle from './ThemeToggle';
 
 const Navbar = () => {
   const { isLoggedIn, isAdmin, user, logout } = useAuth();
@@ -18,7 +19,7 @@ const Navbar = () => {
   // Helper: highlight active link
   const isActive = (path) =>
     location.pathname === path
-      ? 'text-white font-semibold border-b-2 border-white'
+      ? 'text-white force-white font-semibold border-b-2 border-white'
       : 'text-blue-100 hover:text-white transition-colors';
 
   return (
@@ -33,7 +34,7 @@ const Navbar = () => {
                 <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/>
               </svg>
             </div>
-            <span className="text-white text-xl font-bold tracking-wide">
+            <span className="text-white force-white text-xl font-bold tracking-wide">
               ELearnify
             </span>
           </Link>
@@ -58,6 +59,7 @@ const Navbar = () => {
 
           {/* ── Desktop Auth Buttons ───────────────────────────── */}
           <div className="hidden md:flex items-center gap-3">
+            <ThemeToggle />
             {!isLoggedIn ? (
               <>
                 <Link to="/login"
@@ -82,7 +84,7 @@ const Navbar = () => {
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                  className="bg-red-500 hover:bg-red-600 text-white force-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                   Logout
                 </button>
               </div>
@@ -91,7 +93,7 @@ const Navbar = () => {
 
           {/* ── Mobile Hamburger ───────────────────────────────── */}
           <button
-            className="md:hidden text-white p-2"
+            className="md:hidden text-white force-white p-2"
             onClick={() => setMenuOpen(!menuOpen)}>
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               {menuOpen
@@ -119,7 +121,8 @@ const Navbar = () => {
               </Link>
             )}
 
-            <div className="pt-2 border-t border-blue-600">
+            <div className="pt-2 border-t border-blue-600 space-y-3">
+              <ThemeToggle />
               {!isLoggedIn ? (
                 <div className="flex gap-3">
                   <Link to="/login"    onClick={() => setMenuOpen(false)} className="text-blue-100 hover:text-white">Login</Link>

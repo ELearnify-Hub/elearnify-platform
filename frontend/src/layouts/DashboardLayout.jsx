@@ -5,19 +5,13 @@ import TopBar  from '../components/TopBar';
 
 const DashboardLayout = ({ children, title, subtitle }) => {
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden">
-
-      {/* Sidebar — fixed on left */}
+    <div className="flex h-screen bg-slate-50 dark:bg-slate-950 overflow-hidden text-slate-900 dark:text-slate-100">
       <Sidebar />
 
-      {/* Main area */}
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-
-        {/* Top bar */}
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden bg-slate-50 dark:bg-slate-950">
         <TopBar title={title} subtitle={subtitle} />
 
-        {/* Scrollable page content */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-6 bg-slate-50 dark:bg-slate-950">
           {children}
         </main>
       </div>

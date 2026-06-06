@@ -1,33 +1,51 @@
 // context/ThemeContext.jsx
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
 const ThemeContext = createContext(null);
+const STORAGE_KEY = 'elearnify-theme';
+
+const getInitialTheme = () => {
+  if (typeof window === 'undefined') return 'light';
+
+  const savedTheme = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('theme');
+  if (savedTheme === 'light' || savedTheme === 'dark') return savedTheme;
+
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+};
+
+const applyThemeToDocument = (theme) => {
+  if (typeof document === 'undefined') return;
+
+  const root = document.documentElement;
+  const body = document.body;
+
+  root.classList.remove('light', 'dark');
+  body.classList.remove('light', 'dark');
+
+  root.classList.add(theme);
+  body.classList.add(theme);
+  root.dataset.theme = theme;
+  body.dataset.theme = theme;
+  root.style.colorScheme = theme;
+};
 
 export const ThemeProvider = ({ children }) => {
-  // Read saved preference or default to 'light'
-  const [theme, setTheme] = useState(
-    () => localStorage.getItem('theme') || 'light'
-  );
+  const [theme, setTheme] = useState(getInitialTheme);
 
   useEffect(() => {
-    const root = document.documentElement;
-    // ShadCN uses the 'dark' class on <html> for dark mode
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-    localStorage.setItem('theme', theme);
+    applyThemeToDocument(theme);
+    localStorage.setItem(STORAGE_KEY, theme);
+    localStorage.setItem('theme', theme); // keeps compatibility with older code
   }, [theme]);
 
-  const toggleTheme = () =>
-    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+  const value = useMemo(() => ({
+    theme,
+    isDark: theme === 'dark',
+    setTheme,
+    toggleTheme: () => setTheme(prev => (prev === 'light' ? 'dark' : 'light')),
+  }), [theme]);
 
-  return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 };
 
 export const useTheme = () => {
