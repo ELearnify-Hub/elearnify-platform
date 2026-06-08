@@ -16,6 +16,8 @@ import StatCard        from '../components/StatCard';
 import Loader          from '../components/Loader';
 import { SERVER_URL }  from '../services/api';
 import ModuleBuilder   from '../components/ModuleBuilder';
+import { quizAPI } from '../services/api';
+import AdminCertificates from '../components/AdminCertificates';
 
 // ── Reusable Course Form Modal ─────────────────────────────────────────────────
 const CourseFormModal = ({ editCourse, onClose, onSaved }) => {
@@ -311,6 +313,7 @@ const AdminDashboard = () => {
   const [editCourse,       setEditCourse]     = useState(null);
   const [uploadModal,      setUploadModal]    = useState(null);
   const [curriculumCourse, setCurriculumCourse] = useState(null); // Added state here
+  const [totalQuizCount, setTotalQuizCount] = useState(0);
 
   const fetchData = async () => {
     setLoading(true);
@@ -325,6 +328,25 @@ const AdminDashboard = () => {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+    // Add to fetchData function:
+    const [cRes, sRes] = await Promise.all([
+      courseAPI.getAll({ limit: 100 }),
+      authAPI.getAllStudents()
+    ]);
+    // ... existing code
+
+    // Fetch quiz count
+    try {
+      const quizCounts = await Promise.all(
+        cRes.data.courses.map(c => quizAPI.getByCourse(c._id))
+      );
+      const totalQuizzes = quizCounts.reduce(
+        (sum, r) => sum + (r.data.quizzes?.length || 0), 0
+      );
+      setTotalQuizCount(totalQuizzes);
+    } catch {
+      setTotalQuizCount(0);
     }
   };
 
@@ -363,6 +385,7 @@ const AdminDashboard = () => {
     { id: 'courses',   label: '📚 Courses'   },
     { id: 'students',  label: '👥 Students'  },
     { id: 'analytics', label: '📈 Analytics' },
+    { id: 'certificates', label: '🏆 Certificates' },
   ];
 
   return (
@@ -400,6 +423,13 @@ const AdminDashboard = () => {
             <StatCard icon={CheckCircle} label="Published"         value={publishedCount}      color="green"  delay={0.1} trend={12} />
             <StatCard icon={Users}       label="Total Students"    value={students.length}     color="purple" delay={0.2} trend={18} />
             <StatCard icon={TrendingUp}  label="Total Enrollments" value={totalEnrollments}    color="orange" delay={0.3} trend={8}  />
+            <StatCard
+              icon={BookOpen}
+              label="Total Quizzes"
+              value={totalQuizCount}
+              color="purple"
+              delay={0.4}
+            />
           </div>
 
           {/* Recent courses table */}
@@ -704,6 +734,11 @@ const AdminDashboard = () => {
             <StatCard icon={TrendingUp}  label="Published Rate"         value={courses.length ? `${Math.round(publishedCount/courses.length*100)}%` : '0%'} color="green" delay={0.3} />
           </div>
         </div>
+      )}
+
+      {/* ── TAB: Certificates ─────────────────────────────────── */}
+      {activeTab === 'certificates' && (
+        <AdminCertificates />
       )}
 
       {/* ── Modals ────────────────────────────────────────────── */}

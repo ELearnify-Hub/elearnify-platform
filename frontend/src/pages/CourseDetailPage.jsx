@@ -7,7 +7,7 @@ import {
   Lock, CheckCircle, Clock, Users, BookOpen,
   Download, Eye, ArrowRight
 } from 'lucide-react';
-import { courseAPI, enrollmentAPI, moduleAPI } from '../services/api';
+import { courseAPI, enrollmentAPI, moduleAPI, quizAPI, certificateAPI } from '../services/api';
 import { useAuth }     from '../context/AuthContext';
 import { SERVER_URL }  from '../services/api';
 import Loader          from '../components/Loader';
@@ -33,54 +33,89 @@ const CourseDetailPage = () => {
   const [enrolling,    setEnrolling]    = useState(false);
   const [activeLesson, setActiveLesson] = useState(null);
   const [completed,    setCompleted]    = useState(new Set());
-  const [expandedMods, setExpandedMods] = useState(new Set());
-  const [message,      setMessage]      = useState('');
+  const [expandedMods,  setExpandedMods]  = useState(new Set());
+  const [moduleQuizzes, setModuleQuizzes] = useState({});
+  const [message,       setMessage]       = useState('');
+  const [certificate, setCertificate] = useState(null);
 
   // ── Fetch course + modules ────────────────────────────────────────────────
   useEffect(() => {
+    let mounted = true;
+
     const fetchData = async () => {
+      setLoading(true);
+      setError('');
+
       try {
         const { data } = await courseAPI.getById(id);
-        setCourse(data.course);
+        const courseData = data.course;
 
-        // Check enrollment
-        if (user && data.course.enrolledStudents) {
+        if (!mounted) return;
+        setCourse(courseData);
+
+        if (user && courseData.enrolledStudents) {
           setEnrolled(
-            data.course.enrolledStudents
+            courseData.enrolledStudents
               .map(s => s.toString())
               .includes(user._id?.toString())
           );
+        } else {
+          setEnrolled(false);
         }
 
-        // Fetch modules
+        let mods = [];
         try {
           const modRes = await moduleAPI.getModules(id);
-          const mods   = modRes.data.modules || [];
-          setModules(mods);
-
-          // Expand all modules by default
-          setExpandedMods(new Set(mods.map(m => m._id)));
-
-          // Set first lesson as active
-          if (mods.length > 0 && mods[0].lessons?.length > 0) {
-            setActiveLesson({
-              lesson: mods[0].lessons[0],
-              moduleId: mods[0]._id
-            });
-          }
+          mods = modRes.data.modules || [];
         } catch {
-          // No modules yet — that's okay
+          mods = [];
         }
 
+        if (!mounted) return;
+        setModules(mods);
+        setExpandedMods(new Set(mods.map(m => m._id)));
+
+        if (mods.length > 0 && mods[0].lessons?.length > 0) {
+          setActiveLesson({
+            lesson: mods[0].lessons[0],
+            moduleId: mods[0]._id
+          });
+        } else {
+          setActiveLesson(null);
+        }
+
+        try {
+          const quizRes = await quizAPI.getByCourse(id);
+          const quizMap = {};
+          quizRes.data.quizzes?.forEach(quiz => {
+            if (quiz.moduleId) quizMap[quiz.moduleId.toString()] = quiz;
+          });
+          if (mounted) setModuleQuizzes(quizMap);
+        } catch {
+          if (mounted) setModuleQuizzes({});
+        }
       } catch {
-        setError('Course not found or failed to load.');
+        if (mounted) setError('Course not found or failed to load.');
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     };
+
     fetchData();
+
+    return () => {
+      mounted = false;
+    };
   }, [id, user]);
 
+  useEffect(() => {
+    if (isLoggedIn && id) {
+      fetchCertificate();
+    } else {
+      setCertificate(null);
+    }
+  }, [id, isLoggedIn]);
+  
   // ── Toggle module expand ──────────────────────────────────────────────────
   const toggleModule = (moduleId) => {
     setExpandedMods(prev => {
@@ -107,10 +142,46 @@ const CourseDetailPage = () => {
   const handleMarkComplete = async (lessonId, moduleId) => {
     if (!enrolled) return;
     try {
-      await moduleAPI.markComplete(id, lessonId, moduleId);
+      const { data } = await moduleAPI.markComplete(id, lessonId, moduleId);
       setCompleted(prev => new Set([...prev, lessonId]));
+
+      if (data.certificate) {
+        setCertificate(data.certificate);
+        setMessage('🎉 Course completed! Your certificate is ready.');
+      }
     } catch {
       console.error('Failed to mark complete');
+    }
+  };
+
+  const fetchCertificate = async () => {
+    try {
+      const { data } = await certificateAPI.getMyForCourse(id);
+      setCertificate(data.certificate);
+    } catch (error) {
+      setCertificate(null);
+    }
+  };
+
+  const downloadCertificate = async () => {
+    try {
+      const response = await certificateAPI.downloadFile(certificate.certificateId);
+
+      const blob = new Blob([response.data], {
+      type: 'application/pdf'
+      });
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+
+      link.href = url;
+      link.download = `${certificate.certificateId}.pdf`;
+      link.click();
+
+      window.URL.revokeObjectURL(url);
+
+    } catch (error) {
+      alert('Failed to download certificate');
     }
   };
 
@@ -214,6 +285,25 @@ const CourseDetailPage = () => {
                 </span>
               </div>
             </motion.div>
+
+            {certificate && (
+              <div className="mt-6 p-5 rounded-2xl border border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800">
+                <h3 className="font-bold text-green-700 dark:text-green-400">
+                  🎉 Certificate Earned!
+                </h3>
+
+                <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+                  Certificate ID: {certificate.certificateId}
+                </p>
+
+                <button
+                  onClick={downloadCertificate}
+                  className="mt-4 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-sm font-medium"
+                > 
+                Download Certificate
+                </button>
+              </div>
+            )}
 
             {/* ── Active Lesson Viewer ─────────────────────────── */}
             {activeLesson && (
@@ -512,12 +602,13 @@ const CourseDetailPage = () => {
                             animate={{ height: 'auto' }}
                             exit={{    height: 0    }}
                             className="overflow-hidden">
-                            {mod.lessons?.map((lesson, idx) => {
+                            {mod.lessons?.map((lesson) => {
                               const canAccess = canAccessContent || lesson.isFreePreview;
                               const isActive  = activeLesson?.lesson._id === lesson._id;
                               const isDone    = completed.has(lesson._id);
 
-                              return (
+                              return (                            
+
                                 <button
                                   key={lesson._id}
                                   onClick={() => handleLessonClick(lesson, mod._id)}
@@ -570,7 +661,31 @@ const CourseDetailPage = () => {
                           </motion.div>
                         )}
                       </AnimatePresence>
-                    </div>
+
+                      {/* Quiz button — appears after lessons in sidebar */}
+                      {moduleQuizzes[mod._id] && canAccessContent && (
+                        <button
+                          onClick={() => navigate(`/quiz/${moduleQuizzes[mod._id]._id}`)}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-left
+                          bg-purple-50 dark:bg-purple-900/10 hover:bg-purple-100
+                          dark:hover:bg-purple-900/20 transition-colors border-t
+                          border-purple-100 dark:border-purple-800/30">
+                          <div className="w-5 h-5 rounded-full bg-purple-500 flex items-center
+                            justify-center flex-shrink-0">
+                            <span className="text-white text-xs font-bold">?</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-purple-700
+                              dark:text-purple-400">
+                              Module Quiz
+                            </p>
+                            <p className="text-xs text-purple-500 dark:text-purple-500">
+                              Pass with {moduleQuizzes[mod._id].passingScore}%
+                            </p>
+                          </div>
+                        </button>
+                      )}
+                    </div>                    
                   ))}
                 </div>
               </div>

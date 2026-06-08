@@ -45,6 +45,8 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/courses', require('./routes/courseRoutes'));
 app.use('/api/enrollments', require('./routes/enrollmentRoutes'));
 app.use('/api/courses/:courseId/modules', require('./routes/moduleRoutes'));
+app.use('/api/quiz', require('./routes/quizRoutes'));
+app.use('/api/certificates', require('./routes/certificateRoutes'));
 
 // ─── Health Check Route ───────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {

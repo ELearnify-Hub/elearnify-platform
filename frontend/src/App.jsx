@@ -10,15 +10,17 @@ import StudentDashboard from './pages/StudentDashboard';
 import Navbar           from './components/Navbar';
 import Footer           from './components/Footer';
 import ProtectedRoute   from './components/ProtectedRoute';
-import { useAuth }      from './context/AuthContext';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage  from './pages/ResetPasswordPage';
+import QuizPage       from './pages/QuizPage';
+import QuizResultPage from './pages/QuizResultPage';
+import CertificateVerifyPage from './pages/CertificateVerifyPage';
+
 
 // Pages that use the DashboardLayout don't need Navbar/Footer
-const DASHBOARD_PATHS = ['/dashboard', '/admin', '/my-courses', '/profile'];
+const DASHBOARD_PATHS = ['/dashboard', '/admin', '/my-courses', '/profile', '/quiz'];
 
 function App() {
-  const { isLoggedIn } = useAuth();
   const isDashboard = DASHBOARD_PATHS.some(p =>
     window.location.pathname.startsWith(p)
   );
@@ -38,6 +40,7 @@ function App() {
             <Route path="/courses/:id" element={<CourseDetailPage />} />
             <Route path="/forgot-password"       element={<ForgotPasswordPage />} />
             <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+            <Route path="/verify/:certificateId" element={<CertificateVerifyPage />} />
 
             {/* Student dashboard */}
             <Route path="/dashboard" element={
@@ -50,6 +53,12 @@ function App() {
             {/* Admin dashboard */}
             <Route path="/admin" element={
               <ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>
+            } />
+            <Route path="/quiz/:quizId"         element={
+              <ProtectedRoute><QuizPage /></ProtectedRoute>
+            } />
+            <Route path="/quiz/:quizId/results" element={
+              <ProtectedRoute><QuizResultPage /></ProtectedRoute>
             } />
           </Routes>
         </main>

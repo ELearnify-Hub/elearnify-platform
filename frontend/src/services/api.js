@@ -135,4 +135,35 @@ export const moduleAPI = {
     API.post(`/courses/${courseId}/modules/progress`, { lessonId, moduleId })
 };
 
+// ─── Quiz API ─────────────────────────────────────────────────────────────────
+export const quizAPI = {
+  // Admin
+  create:         (data)     => API.post('/quiz',                         data),
+  update:         (id, data) => API.put(`/quiz/${id}`,                    data),
+  delete:         (id)       => API.delete(`/quiz/${id}`),
+  getAdminResults:(id)       => API.get(`/quiz/${id}/admin-results`),
+
+  // Shared
+  getByCourse:    (courseId) => API.get(`/quiz/course/${courseId}`),
+  getById:        (id)       => API.get(`/quiz/${id}`),
+  submit:         (id, data) => API.post(`/quiz/${id}/submit`,            data),
+  getMyResults:   (id)       => API.get(`/quiz/${id}/results`)
+};
+
+export const certificateAPI = {
+  getMyForCourse: (courseId) =>
+    API.get(`/certificates/course/${courseId}/my`),
+
+  downloadFile: (certificateId) =>
+    API.get(`/certificates/download/${certificateId}`, {
+      responseType: 'blob'
+    }),
+
+  verify: (certificateId) =>
+    API.get(`/certificates/verify/${certificateId}`),
+
+  getAll: () =>
+    API.get('/certificates/admin/all')
+};
+
 export default API;

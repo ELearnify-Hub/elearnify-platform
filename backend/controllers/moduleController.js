@@ -4,6 +4,8 @@
 const Course = require('../models/Course');
 const path   = require('path');
 const fs     = require('fs');
+const CourseProgress = require('../models/CourseProgress');
+const { checkAndIssueCertificate } = require('./certificateController');
 
 // ── Helper: delete a file from uploads/ ──────────────────────────────────────
 const deleteFile = (filePath) => {
@@ -303,10 +305,12 @@ const markLessonComplete = async (req, res) => {
 
     const course = await Course.findById(req.params.courseId);
     if (!course) {
-      return res.status(404).json({ success: false, message: 'Course not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
     }
 
-    // Verify student is enrolled
     const isEnrolled = course.enrolledStudents
       .map(id => id.toString())
       .includes(userId.toString());
@@ -318,18 +322,56 @@ const markLessonComplete = async (req, res) => {
       });
     }
 
-    // We'll store progress in the User model in Phase D (Certificates)
-    // For now return success and calculate on the fly
+    let progress = await CourseProgress.findOne({
+      userId,
+      courseId: req.params.courseId
+    });
+
+    if (!progress) {
+      progress = await CourseProgress.create({
+        userId,
+        courseId: req.params.courseId,
+        completedLessons: []
+      });
+    }
+
+    const alreadyCompleted = progress.completedLessons.some(item =>
+      item.lessonId.toString() === lessonId &&
+      item.moduleId.toString() === moduleId
+    );
+
+    if (!alreadyCompleted) {
+      progress.completedLessons.push({
+        lessonId,
+        moduleId,
+        completedAt: new Date()
+      });
+
+      await progress.save();
+    }
+
+    const certificate = await checkAndIssueCertificate(
+      userId,
+      req.params.courseId,
+      req.user.name
+    );
+
     res.status(200).json({
-      success:  true,
+      success: true,
       lessonId,
       moduleId,
-      message: 'Lesson marked as complete'
+      certificate,
+      message: certificate
+        ? 'Lesson completed and certificate issued!'
+        : 'Lesson marked as complete'
     });
 
   } catch (error) {
     console.error('Mark complete error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
   }
 };
 

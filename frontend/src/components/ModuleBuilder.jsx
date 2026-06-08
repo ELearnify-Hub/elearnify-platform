@@ -1,14 +1,15 @@
 // components/ModuleBuilder.jsx
 // Admin UI for building course modules and lessons
-import { useState, useEffect }  from 'react';
+import { useState, useEffect, useCallback }  from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   PlusCircle, ChevronDown, ChevronRight,
   Pencil, Trash2, Video, FileText,
   Upload, Check, X, GripVertical,
-  Eye, EyeOff
+  Eye
 } from 'lucide-react';
-import { moduleAPI } from '../services/api';
+import { moduleAPI, quizAPI } from '../services/api';
+import QuizBuilder from './QuizBuilder';
 
 // ── Lesson Type Badge ─────────────────────────────────────────────────────────
 const LessonTypeBadge = ({ type }) => {
@@ -238,13 +239,19 @@ const LessonForm = ({ courseId, moduleId, editLesson, onClose, onSaved }) => {
 };
 
 // ── Module Row ────────────────────────────────────────────────────────────────
+
 const ModuleRow = ({ module, courseId, onRefresh }) => {
-  const [expanded,      setExpanded]      = useState(true);
-  const [showLessonForm,setShowLessonForm] = useState(false);
-  const [editLesson,    setEditLesson]     = useState(null);
-  const [editingTitle,  setEditingTitle]   = useState(false);
-  const [newTitle,      setNewTitle]       = useState(module.title);
-  const [deleting,      setDeleting]       = useState(false);
+  const [expanded,        setExpanded]        = useState(true);
+  const [showLessonForm,  setShowLessonForm]  = useState(false);
+  const [editLesson,      setEditLesson]      = useState(null);
+  const [editingTitle,    setEditingTitle]    = useState(false);
+  const [newTitle,        setNewTitle]        = useState(module.title);
+  const [deleting,        setDeleting]        = useState(false);
+  
+  // Quiz states
+  const [moduleQuiz,      setModuleQuiz]      = useState(null);
+  const [showQuizBuilder, setShowQuizBuilder] = useState(false);
+  const [loadingQuiz,     setLoadingQuiz]     = useState(false);
 
   const handleDeleteModule = async () => {
     if (!window.confirm(`Delete module "${module.title}" and ALL its lessons?`)) return;
@@ -278,6 +285,26 @@ const ModuleRow = ({ module, courseId, onRefresh }) => {
       alert('Failed to delete lesson');
     }
   };
+
+  const fetchModuleQuiz = useCallback(async () => {
+    setLoadingQuiz(true);
+    try {
+      const { data } = await quizAPI.getByCourse(courseId);
+      const quizzes = Array.isArray(data) ? data : (data.quizzes || []);
+      const quiz = quizzes.find(
+        q => q.moduleId?.toString() === module._id?.toString()
+      );
+      setModuleQuiz(quiz || null);
+    } catch {
+      setModuleQuiz(null);
+    } finally {
+      setLoadingQuiz(false);
+    }
+  }, [courseId, module._id]);
+
+  useEffect(() => {
+    fetchModuleQuiz();
+  }, [fetchModuleQuiz]);
 
   return (
     <motion.div
@@ -352,6 +379,20 @@ const ModuleRow = ({ module, courseId, onRefresh }) => {
               transition-colors font-medium">
             <PlusCircle size={13} /> Add Lesson
           </button>
+          
+          {/* Add Quiz Button */}
+          <button
+            onClick={() => setShowQuizBuilder(true)}
+            disabled={loadingQuiz}
+            className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg
+              font-medium transition-colors
+              ${moduleQuiz
+                ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 hover:bg-green-200'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+              }`}>
+            📝 {loadingQuiz ? 'Loading...' : moduleQuiz ? 'Edit Quiz' : 'Add Quiz'}
+          </button>
+
           <button
             onClick={() => { setEditingTitle(true); setNewTitle(module.title); }}
             className="p-1.5 text-gray-400 hover:text-blue-600
@@ -442,7 +483,7 @@ const ModuleRow = ({ module, courseId, onRefresh }) => {
                       className="p-1.5 text-gray-400 hover:text-blue-600
                         hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg
                         transition-colors">
-                      <Pencil size={13} />
+                        <Pencil size={13} />
                     </button>
                     <button
                       onClick={() => handleDeleteLesson(
@@ -481,6 +522,20 @@ const ModuleRow = ({ module, courseId, onRefresh }) => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Quiz Builder Modal */}
+      {showQuizBuilder && (
+        <QuizBuilder
+          courseId={courseId}
+          moduleId={module._id}
+          existingQuiz={moduleQuiz}
+          onClose={() => setShowQuizBuilder(false)}
+          onSaved={() => {
+            setShowQuizBuilder(false);
+            fetchModuleQuiz();
+          }}
+        />
+      )}
     </motion.div>
   );
 };
@@ -493,7 +548,7 @@ const ModuleBuilder = ({ courseId }) => {
   const [newModTitle,   setNewModTitle]   = useState('');
   const [saving,        setSaving]        = useState(false);
 
-  const fetchModules = async () => {
+  const fetchModules = useCallback(async () => {
     try {
       const { data } = await moduleAPI.getModules(courseId);
       setModules(data.modules);
@@ -502,11 +557,11 @@ const ModuleBuilder = ({ courseId }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [courseId]);
 
   useEffect(() => {
     fetchModules();
-  }, [courseId]);
+  }, [fetchModules]);
 
   const handleAddModule = async () => {
     if (!newModTitle.trim()) return;
