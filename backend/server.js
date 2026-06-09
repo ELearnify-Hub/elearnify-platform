@@ -1,22 +1,18 @@
 // server.js — Entry point of our Express application
 
 // Load environment variables from .env file FIRST
-// This must be the very first line before any other imports
 const dotenv = require('dotenv');
 dotenv.config();
 
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const session = require('express-session');
 
-// Import our database connection function
 const connectDB = require('./config/db');
-
-// Initialize Express application
-const app = express();
-
-const session  = require('express-session');
 const passport = require('./config/passport');
+
+const app = express();
 
 // ─── Connect to MongoDB ───────────────────────────────────────────────────────
 connectDB();
@@ -24,13 +20,29 @@ connectDB();
 // ─── Middleware Setup ─────────────────────────────────────────────────────────
 
 // CORS Configuration
-// Allows local development and deployed frontend
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:4173',
+  'https://elearnify-platform.vercel.app',
+  process.env.FRONTEND_URL
+].filter(Boolean);
+
 app.use(cors({
-  origin: [
-    'http://localhost:5173', // Vite development server
-    'http://localhost:4173', // Vite preview server
-    process.env.FRONTEND_URL // Production frontend URL
-  ].filter(Boolean),
+  origin: function (origin, callback) {
+    // Allow browser direct requests, Postman, health checks, etc.
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    console.log('❌ CORS blocked origin:', origin);
+    console.log('✅ Allowed origins:', allowedOrigins);
+
+    return callback(new Error(`CORS blocked origin: ${origin}`));
+  },
   credentials: true
 }));
 
@@ -40,17 +52,15 @@ app.use(express.json());
 // Parse URL-encoded form data
 app.use(express.urlencoded({ extended: true }));
 
-// ── Session (required for Passport OAuth flow) ────────────────────────────────
-// Note: We use sessions ONLY during the OAuth handshake
-// After that, we switch to JWT (stateless)
+// ── Session required for Passport OAuth flow ──────────────────────────────────
 app.use(session({
-  secret:            process.env.SESSION_SECRET,
-  resave:            false,
+  secret: process.env.SESSION_SECRET || 'fallback_session_secret',
+  resave: false,
   saveUninitialized: false,
   cookie: {
-    secure:   process.env.NODE_ENV === 'production',
+    secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    maxAge:   10 * 60 * 1000  // 10 minutes — only needed during OAuth flow
+    maxAge: 10 * 60 * 1000
   }
 }));
 
@@ -102,5 +112,6 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`\n🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-  console.log(`📡 API Health Check: http://localhost:${PORT}/api/health\n`);
+  console.log(`📡 API Health Check: http://localhost:${PORT}/api/health`);
+  console.log('🌐 Allowed CORS origins:', allowedOrigins, '\n');
 });
