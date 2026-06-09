@@ -29,7 +29,7 @@ const userSchema = new mongoose.Schema(
 
     password: {
       type: String,
-      required: [true, 'Password is required'],
+      // Remove 'required' — Google users have no password
       minlength: [6, 'Password must be at least 6 characters'],
       select: false
     },
@@ -93,7 +93,30 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null
       // Stores when the reset token expires
+    },
+
+    // ── Google OAuth Fields ───────────────────────────────────────────────────────
+    googleId: {
+      type:    String,
+      default: null
+      // Google's unique user ID
+      // Used to find user on subsequent OAuth logins
+    },
+
+    authProvider: {
+      type:    String,
+      enum:    ['local', 'google'],
+      default: 'local'
+      // 'local'  = registered with email/password
+      // 'google' = registered via Google OAuth
+    },
+
+    avatar: {
+      type:    String,
+      default: ''
+      // Profile picture URL from Google
     }
+
   },
   {
     timestamps: true
@@ -103,16 +126,16 @@ const userSchema = new mongoose.Schema(
 // ─── Pre-Save Middleware: Password Hashing ────────────────────────────────────
 
 userSchema.pre('save', async function (next) {
-  // Only hash password if it was modified or newly created
-  if (!this.isModified('password')) {
+  // Skip hashing if:
+  // 1. Password wasn't modified
+  // 2. User has no password (Google OAuth user)
+  if (!this.isModified('password') || !this.password) {
     return next();
   }
 
   try {
-    const salt = await bcrypt.genSalt(10);
-
+    const salt   = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
-
     next();
   } catch (error) {
     next(error);

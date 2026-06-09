@@ -1,8 +1,9 @@
 // pages/LoginPage.jsx
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authAPI } from '../services/api';
+import GoogleAuthButton from '../components/GoogleAuthButton';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -10,47 +11,67 @@ const LoginPage = () => {
 
   const [formData, setFormData] = useState({
     email: '',
-    password: '',
+    password: ''
   });
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Handle errors from Google OAuth redirect
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const oauthError = params.get('error');
+
+    if (oauthError) {
+      const errorMessages = {
+        oauth_failed: 'Google sign-in failed. Please try again.',
+        google_auth_failed: 'Could not connect to Google.',
+        server_error: 'A server error occurred during sign-in.'
+      };
+
+      setError(errorMessages[oauthError] || 'Authentication failed.');
+
+      // Clean the URL
+      window.history.replaceState({}, document.title, '/login');
+    }
+  }, []);
+
   const handleChange = (e) => {
     setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [e.target.name]: e.target.value
     }));
+
     setError('');
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  setError('');
+    e.preventDefault();
 
-  try {
-    const { data } = await authAPI.login(formData);
+    setLoading(true);
+    setError('');
 
-    login(data.token, data.user);
+    try {
+      const { data } = await authAPI.login(formData);
 
-    const roleRedirects = {
-      admin: '/admin',
-      instructor: '/instructor',
-      student: '/dashboard'
-    };
+      login(data.token, data.user);
 
-    navigate(roleRedirects[data.user.role] || '/dashboard');
+      const roleRedirects = {
+        admin: '/admin',
+        instructor: '/instructor',
+        student: '/dashboard'
+      };
 
-  } catch (err) {
-    setError(
-      err.response?.data?.message ||
-        'Login failed. Please try again.'
-    );
-  } finally {
-    setLoading(false);
-  }
-};
+      navigate(roleRedirects[data.user.role] || '/dashboard');
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+          'Login failed. Please try again.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-950 dark:to-slate-900 flex items-center justify-center px-4">
@@ -96,7 +117,7 @@ const LoginPage = () => {
 
           {/* Email */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Email Address
             </label>
 
@@ -113,7 +134,7 @@ const LoginPage = () => {
 
           {/* Password */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Password
             </label>
 
@@ -159,6 +180,7 @@ const LoginPage = () => {
                     stroke="currentColor"
                     strokeWidth="4"
                   />
+
                   <path
                     className="opacity-75"
                     fill="currentColor"
@@ -172,6 +194,22 @@ const LoginPage = () => {
               'Sign In'
             )}
           </button>
+
+          {/* Divider */}
+          <div className="relative my-2">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200 dark:border-gray-700" />
+            </div>
+
+            <div className="relative flex justify-center">
+              <span className="bg-white dark:bg-gray-900 px-3 text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">
+                or continue with
+              </span>
+            </div>
+          </div>
+
+          {/* Google Auth Button */}
+          <GoogleAuthButton label="Continue with Google" />
         </form>
 
         {/* Development Hint */}

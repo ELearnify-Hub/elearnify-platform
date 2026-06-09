@@ -1,4 +1,4 @@
- // controllers/authController.js
+// controllers/authController.js
 // Contains the business logic for: Register, Login, Get Profile
 const crypto = require('crypto');  // Built into Node.js — no install needed
 const {
@@ -410,12 +410,71 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// ─── @route   GET /api/auth/google ───────────────────────────────────────────
+// @desc    Initiate Google OAuth flow
+// @access  Public
+// Note: This route is handled by Passport middleware in routes file
+// This controller handles the CALLBACK after Google redirects back
+
+// ─── @route   GET /api/auth/google/callback ──────────────────────────────────
+// @desc    Handle Google OAuth callback — issue JWT and redirect to frontend
+// @access  Public (called by Google)
+const googleCallback = async (req, res) => {
+  try {
+    // At this point, Passport has already verified the Google token
+    // and attached the user to req.user via the strategy callback
+
+    if (!req.user) {
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/login?error=oauth_failed`
+      );
+    }
+
+    // Generate JWT for the authenticated user
+    const token = generateToken(req.user._id);
+
+    // Build safe user object to pass to frontend
+    const userData = encodeURIComponent(JSON.stringify({
+      _id:             req.user._id,
+      name:            req.user.name,
+      email:           req.user.email,
+      role:            req.user.role,
+      avatar:          req.user.avatar,
+      authProvider:    req.user.authProvider,
+      enrolledCourses: req.user.enrolledCourses || []
+    }));
+
+    // Redirect to frontend with token and user data in URL
+    // Frontend will extract these, store them, and clear the URL
+    res.redirect(
+      `${process.env.FRONTEND_URL}/auth/callback?token=${token}&user=${userData}`
+    );
+
+  } catch (error) {
+    console.error('Google callback error:', error);
+    res.redirect(
+      `${process.env.FRONTEND_URL}/login?error=server_error`
+    );
+  }
+};
+
+// ─── @route   GET /api/auth/google/failure ───────────────────────────────────
+// @desc    Handle OAuth failure
+// @access  Public
+const googleFailure = (req, res) => {
+  res.redirect(
+    `${process.env.FRONTEND_URL}/login?error=google_auth_failed`
+  );
+};
+
 module.exports = {
   register,
   login,
   getProfile,
   getAllStudents,
-  forgotPassword,     // ← ADD
-  verifyResetToken,   // ← ADD
-  resetPassword       // ← ADD
+  forgotPassword,     
+  verifyResetToken,   
+  resetPassword,
+  googleCallback,   
+  googleFailure          
 };

@@ -15,6 +15,9 @@ const connectDB = require('./config/db');
 // Initialize Express application
 const app = express();
 
+const session  = require('express-session');
+const passport = require('./config/passport');
+
 // ─── Connect to MongoDB ───────────────────────────────────────────────────────
 connectDB();
 
@@ -36,6 +39,24 @@ app.use(express.json());
 
 // Parse URL-encoded form data
 app.use(express.urlencoded({ extended: true }));
+
+// ── Session (required for Passport OAuth flow) ────────────────────────────────
+// Note: We use sessions ONLY during the OAuth handshake
+// After that, we switch to JWT (stateless)
+app.use(session({
+  secret:            process.env.SESSION_SECRET,
+  resave:            false,
+  saveUninitialized: false,
+  cookie: {
+    secure:   process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge:   10 * 60 * 1000  // 10 minutes — only needed during OAuth flow
+  }
+}));
+
+// ── Passport Initialization ───────────────────────────────────────────────────
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

@@ -17,6 +17,7 @@ import QuizResultPage from './pages/QuizResultPage';
 import CertificateVerifyPage from './pages/CertificateVerifyPage';
 import InstructorDashboard from './pages/InstructorDashboard';
 import InstructorCourseFormPage from './pages/InstructorCourseFormPage';
+import OAuthCallbackPage from './pages/OAuthCallbackPage';
 
 // Pages that use the DashboardLayout don't need Navbar/Footer
 const DASHBOARD_PATHS = [
@@ -44,6 +45,7 @@ function App() {
             <Route path="/forgot-password"       element={<ForgotPasswordPage />} />
             <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
             <Route path="/verify/:certificateId" element={<CertificateVerifyPage />} />
+            <Route path="/auth/callback" element={<OAuthCallbackPage />} />
 
             {/* Student dashboard */}
             <Route path="/dashboard" element={

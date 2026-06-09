@@ -20,22 +20,22 @@ export const AuthProvider = ({ children }) => {
   // But localStorage persists — so we restore state from it
   useEffect(() => {
     const initializeAuth = async () => {
-      const token = localStorage.getItem('token');
+      const token     = localStorage.getItem('token');
       const savedUser = localStorage.getItem('user');
 
       if (token && savedUser) {
         try {
-          // Verify token is still valid by hitting /profile
           const { data } = await authAPI.getProfile();
-          setUser(data.user);
+          // Merge profile data with stored data to get latest avatar etc.
+          const storedUser = JSON.parse(savedUser);
+          setUser({ ...storedUser, ...data.user });
         } catch (error) {
-          // Token expired or invalid — clear everything
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           setUser(null);
         }
       }
-      setLoading(false); // Done checking
+      setLoading(false);
     };
 
     initializeAuth();
@@ -43,7 +43,6 @@ export const AuthProvider = ({ children }) => {
 
   // ── Login Function ────────────────────────────────────────────────────────
   const login = (token, userData) => {
-    // Save to localStorage so it persists after page refresh
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
