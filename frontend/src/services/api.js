@@ -5,13 +5,23 @@
 import axios from 'axios';
 
 // ─── Server URL ──────────────────────────────────────────────────────────────
-// Used for constructing image URLs and file paths from the server
-export const SERVER_URL = 'http://localhost:5000';
+// Vite reads this from .env locally and from Vercel Environment Variables in production.
+// Production example:
+// VITE_SERVER_URL=https://elearning-backend-76wm.onrender.com/api
+const RAW_API_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:5000/api';
+
+// Normalize URL so we do not accidentally create /api/api routes.
+export const API_BASE_URL = RAW_API_URL.replace(/\/+$/, '').endsWith('/api')
+  ? RAW_API_URL.replace(/\/+$/, '')
+  : `${RAW_API_URL.replace(/\/+$/, '')}/api`;
+
+// Used for constructing image/video/pdf URLs from stored paths like uploads/file.jpg
+export const SERVER_URL = API_BASE_URL.replace(/\/api$/, '');
 
 // ─── Create Axios Instance ────────────────────────────────────────────────────
 // Instead of typing the full URL every time, we set a base URL once
 const API = axios.create({
-  baseURL: `${SERVER_URL}/api`, 
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json'
   }

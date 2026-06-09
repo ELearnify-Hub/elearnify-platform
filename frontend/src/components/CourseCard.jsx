@@ -1,5 +1,6 @@
 // components/CourseCard.jsx — Reusable card displayed in course listings
 import { Link } from 'react-router-dom';
+import { SERVER_URL } from '../services/api';
 
 const LEVEL_COLORS = {
   Beginner:     'bg-green-100 text-green-700',
@@ -28,7 +29,7 @@ const CourseCard = ({ course }) => {
       <div className="relative">
         {thumbnail ? (
           <img
-            src={`http://localhost:5000/${thumbnail}`}
+            src={`${SERVER_URL}/${thumbnail}`}
             alt={title}
             className="w-full h-44 object-cover"
           />

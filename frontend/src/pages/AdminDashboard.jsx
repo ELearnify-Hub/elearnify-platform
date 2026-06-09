@@ -319,41 +319,57 @@ const AdminDashboard = () => {
   const [instructors, setInstructors]           = useState([]);
 
   const fetchData = async () => {
-    setLoading(true);
+  setLoading(true);
 
+  try {
+    // 1. Fetch courses first
+    const cRes = await courseAPI.getAll({ limit: 100 });
+    const courseList = cRes.data.courses || [];
+
+    setCourses(courseList);
+
+    // 2. Fetch students separately
     try {
-      const [cRes, sRes, instrRes] = await Promise.all([
-        courseAPI.getAll({ limit: 100 }),
-        authAPI.getAllStudents(),
-        instructorAPI.getAll()
-      ]);
-
-      const courseList = cRes.data.courses || [];
-
-      setCourses(courseList);
-      setStudents(sRes.data.students || []);
-      setInstructors(instrRes.data.instructors || []);
-
-      try {
-        const quizCounts = await Promise.all(
-          courseList.map(c => quizAPI.getByCourse(c._id))
-        );
-
-        const totalQuizzes = quizCounts.reduce(
-          (sum, r) => sum + (r.data.quizzes?.length || 0),
-          0
-        );
-
-        setTotalQuizCount(totalQuizzes);
-      } catch {
-        setTotalQuizCount(0);
-      }
+      const sRes = await authAPI.getAllStudents();
+      setStudents(sRes.data.students || sRes.data.users || []);
     } catch (err) {
-      console.error('Admin dashboard fetch error:', err);
-    } finally {
-      setLoading(false);
+      console.error('Students fetch error:', err);
+      setStudents([]);
     }
-  };
+
+    // 3. Fetch instructors separately
+    try {
+      const instrRes = await instructorAPI.getAll();
+      setInstructors(instrRes.data.instructors || []);
+    } catch (err) {
+      console.error('Instructors fetch error:', err);
+      setInstructors([]);
+    }
+
+    // 4. Fetch quiz count separately
+    try {
+      const quizCounts = await Promise.all(
+        courseList.map(c => quizAPI.getByCourse(c._id))
+      );
+
+      const totalQuizzes = quizCounts.reduce(
+        (sum, r) => sum + (r.data.quizzes?.length || 0),
+        0
+      );
+
+      setTotalQuizCount(totalQuizzes);
+    } catch (err) {
+      console.error('Quiz count fetch error:', err);
+      setTotalQuizCount(0);
+    }
+
+  } catch (err) {
+    console.error('Courses fetch error:', err);
+    setCourses([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => { fetchData(); }, []);
 

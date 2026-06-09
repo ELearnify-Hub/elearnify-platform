@@ -1,7 +1,7 @@
 // pages/MyCoursesPage.jsx
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { enrollmentAPI } from '../services/api';
+import { enrollmentAPI, SERVER_URL } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Loader from '../components/Loader';
 
@@ -88,7 +88,7 @@ const MyCoursesPage = () => {
               {/* Thumbnail */}
               {course.thumbnail ? (
                 <img
-                  src={`http://localhost:5000/${course.thumbnail}`}
+                  src={`${SERVER_URL}/${course.thumbnail}`}
                   alt={course.title}
                   className="w-full h-40 object-cover"
                 />
