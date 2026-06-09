@@ -25,29 +25,32 @@ const LoginPage = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+  e.preventDefault();
+  setLoading(true);
+  setError('');
 
-    try {
-      const { data } = await authAPI.login(formData);
+  try {
+    const { data } = await authAPI.login(formData);
 
-      login(data.token, data.user);
+    login(data.token, data.user);
 
-      if (data.user.role === 'admin') {
-        navigate('/admin');
-      } else {
-        navigate('/dashboard');
-      }
-    } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          'Login failed. Please try again.'
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+    const roleRedirects = {
+      admin: '/admin',
+      instructor: '/instructor',
+      student: '/dashboard'
+    };
+
+    navigate(roleRedirects[data.user.role] || '/dashboard');
+
+  } catch (err) {
+    setError(
+      err.response?.data?.message ||
+        'Login failed. Please try again.'
+    );
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-950 dark:to-slate-900 flex items-center justify-center px-4">

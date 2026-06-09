@@ -15,10 +15,13 @@ import ResetPasswordPage  from './pages/ResetPasswordPage';
 import QuizPage       from './pages/QuizPage';
 import QuizResultPage from './pages/QuizResultPage';
 import CertificateVerifyPage from './pages/CertificateVerifyPage';
-
+import InstructorDashboard from './pages/InstructorDashboard';
+import InstructorCourseFormPage from './pages/InstructorCourseFormPage';
 
 // Pages that use the DashboardLayout don't need Navbar/Footer
-const DASHBOARD_PATHS = ['/dashboard', '/admin', '/my-courses', '/profile', '/quiz'];
+const DASHBOARD_PATHS = [
+  '/dashboard', '/admin', '/my-courses', '/profile', '/quiz', '/instructor'
+];
 
 function App() {
   const isDashboard = DASHBOARD_PATHS.some(p =>
@@ -48,6 +51,18 @@ function App() {
             } />
             <Route path="/my-courses" element={
               <ProtectedRoute><MyCoursesPage /></ProtectedRoute>
+            } />
+
+            <Route path="/instructor" element={
+              <ProtectedRoute instructorOnly>
+                <InstructorDashboard />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/instructor/courses/new" element={
+              <ProtectedRoute instructorOnly>
+                <InstructorCourseFormPage />
+              </ProtectedRoute>
             } />
 
             {/* Admin dashboard */}

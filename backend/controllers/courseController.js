@@ -119,32 +119,30 @@ const getCourseById = async (req, res) => {
 const createCourse = async (req, res) => {
   try {
     const {
-      title,
-      description,
-      instructor,
-      category,
-      level,
-      price,
-      duration
+      title, description, instructor,
+      category, level, price, duration
     } = req.body;
 
-    // Handle thumbnail upload
-    // req.file is set by Multer middleware (configured in routes)
     const thumbnail = req.file
       ? `uploads/${req.file.filename}`
       : '';
 
+    // If the creator is an instructor, use their name automatically
+    const instructorName = req.user.role === 'instructor'
+      ? req.user.name
+      : (instructor || req.user.name);
+
     const course = await Course.create({
       title,
       description,
-      instructor,
+      instructor:  instructorName,
       category,
       level,
-      price: price || 0,
-      duration,
+      price:       price     || 0,
+      duration:    duration  || '',
       thumbnail,
-      createdBy: req.user._id,  // From protect middleware
-      isPublished: false         // Default: unpublished until admin publishes
+      createdBy:   req.user._id,
+      isPublished: false
     });
 
     res.status(201).json({
@@ -156,18 +154,19 @@ const createCourse = async (req, res) => {
   } catch (error) {
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(e => e.message);
-      return res.status(400).json({
-        success: false,
-        message: messages.join(', ')
-      });
+      return res.status(400).json({ success: false, message: messages.join(', ') });
     }
-
     console.error('Create course error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error creating course'
-    });
+    res.status(500).json({ success: false, message: 'Server error' });
   }
+};
+
+// ── Helper: verify ownership ──────────────────────────────────────────────────
+// Admins can edit any course
+// Instructors can only edit their own
+const verifyOwnership = (course, user) => {
+  if (user.role === 'admin') return true;
+  return course.createdBy.toString() === user._id.toString();
 };
 
 // ─── @route   PUT /api/courses/:id ───────────────────────────────────────────
@@ -177,33 +176,30 @@ const createCourse = async (req, res) => {
 const updateCourse = async (req, res) => {
   try {
     let course = await Course.findById(req.params.id);
-
     if (!course) {
-      return res.status(404).json({
+      return res.status(404).json({ success: false, message: 'Course not found' });
+    }
+
+    // ── Ownership check ───────────────────────────────────────────────────────
+    if (!verifyOwnership(course, req.user)) {
+      return res.status(403).json({
         success: false,
-        message: 'Course not found'
+        message: 'You can only edit your own courses'
       });
     }
 
-    // If a new thumbnail is uploaded, delete the old one
     if (req.file) {
       if (course.thumbnail) {
         const oldPath = path.join(__dirname, '..', course.thumbnail);
-        if (fs.existsSync(oldPath)) {
-          fs.unlinkSync(oldPath); // Delete old file from disk
-        }
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
       }
       req.body.thumbnail = `uploads/${req.file.filename}`;
     }
 
-    // Update the course with new data
     course = await Course.findByIdAndUpdate(
       req.params.id,
       { $set: req.body },
-      {
-        new: true,           // Return the updated document
-        runValidators: true  // Run schema validators on update
-      }
+      { new: true, runValidators: true }
     );
 
     res.status(200).json({
@@ -214,10 +210,7 @@ const updateCourse = async (req, res) => {
 
   } catch (error) {
     console.error('Update course error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error updating course'
-    });
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 
@@ -228,47 +221,69 @@ const updateCourse = async (req, res) => {
 const deleteCourse = async (req, res) => {
   try {
     const course = await Course.findById(req.params.id);
-
     if (!course) {
-      return res.status(404).json({
+      return res.status(404).json({ success: false, message: 'Course not found' });
+    }
+
+    if (!verifyOwnership(course, req.user)) {
+      return res.status(403).json({
         success: false,
-        message: 'Course not found'
+        message: 'You can only delete your own courses'
       });
     }
 
-    // Delete associated files from the uploads folder
     const deleteFile = (filePath) => {
       if (filePath) {
         const fullPath = path.join(__dirname, '..', filePath);
-        if (fs.existsSync(fullPath)) {
-          fs.unlinkSync(fullPath);
-        }
+        if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
       }
     };
 
-    // Delete thumbnail
     deleteFile(course.thumbnail);
+    course.videos.forEach(v => deleteFile(v.filePath));
+    course.pdfs.forEach(p => deleteFile(p.filePath));
 
-    // Delete all videos
-    course.videos.forEach(video => deleteFile(video.filePath));
-
-    // Delete all PDFs
-    course.pdfs.forEach(pdf => deleteFile(pdf.filePath));
-
-    // Delete the course document from MongoDB
     await Course.findByIdAndDelete(req.params.id);
 
-    res.status(200).json({
-      success: true,
-      message: 'Course deleted successfully'
-    });
+    res.status(200).json({ success: true, message: 'Course deleted successfully' });
 
   } catch (error) {
     console.error('Delete course error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error deleting course'
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// ── @route  GET /api/courses/my-courses ───────────────────────────────────────
+// @desc   Get courses created by the logged-in instructor
+// @access Instructor / Admin
+const getInstructorCourses = async (req, res) => {
+  try {
+    const filter = req.user.role === 'admin'
+      ? {}                                    // Admin sees all
+      : { createdBy: req.user._id };          // Instructor sees only theirs
+
+    const courses = await Course.find(filter)
+      .populate('createdBy', 'name email')
+      .sort({ createdAt: -1 });
+
+    // Attach total enrollment counts
+    const coursesWithStats = courses.map(c => ({
+      ...c.toObject(),
+      totalEnrollments: c.enrolledStudents?.length || 0,
+      totalLessons:     c.modules?.reduce(
+        (sum, m) => sum + (m.lessons?.length || 0), 0
+      ) || 0
+    }));
+
+    res.status(200).json({
+      success: true,
+      count:   courses.length,
+      courses: coursesWithStats
     });
+
+  } catch (error) {
+    console.error('Get instructor courses error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 
@@ -284,6 +299,13 @@ const uploadVideo = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Course not found'
+      });
+    }
+
+    if (!verifyOwnership(course, req.user)) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only upload content to your own courses'
       });
     }
 
@@ -335,6 +357,13 @@ const uploadPDF = async (req, res) => {
       });
     }
 
+    if (!verifyOwnership(course, req.user)) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only upload content to your own courses'
+      });
+    }
+
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -381,6 +410,20 @@ const togglePublish = async (req, res) => {
       });
     }
 
+    if (!verifyOwnership(course, req.user)) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only publish your own courses'
+      });
+    }
+
+    if (req.user.role === 'instructor' && !req.user.isApproved) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your instructor account must be approved before publishing courses'
+      });
+    }
+
     course.isPublished = !course.isPublished;
     await course.save();
 
@@ -407,5 +450,6 @@ module.exports = {
   deleteCourse,
   uploadVideo,
   uploadPDF,
-  togglePublish
+  togglePublish,
+  getInstructorCourses
 };

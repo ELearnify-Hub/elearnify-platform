@@ -18,6 +18,8 @@ import { SERVER_URL }  from '../services/api';
 import ModuleBuilder   from '../components/ModuleBuilder';
 import { quizAPI } from '../services/api';
 import AdminCertificates from '../components/AdminCertificates';
+import { instructorAPI } from '../services/api';
+import { GraduationCap } from 'lucide-react';
 
 // ── Reusable Course Form Modal ─────────────────────────────────────────────────
 const CourseFormModal = ({ editCourse, onClose, onSaved }) => {
@@ -309,44 +311,47 @@ const AdminDashboard = () => {
   const [students,         setStudents]         = useState([]);
   const [loading,          setLoading]          = useState(true);
   const [activeTab,        setActiveTab]        = useState('overview');
-  const [showCourseForm, setShowCourseForm] = useState(false);
-  const [editCourse,       setEditCourse]     = useState(null);
-  const [uploadModal,      setUploadModal]    = useState(null);
-  const [curriculumCourse, setCurriculumCourse] = useState(null); // Added state here
-  const [totalQuizCount, setTotalQuizCount] = useState(0);
+  const [showCourseForm, setShowCourseForm]     = useState(false);
+  const [editCourse,       setEditCourse]       = useState(null);
+  const [uploadModal,      setUploadModal]      = useState(null);
+  const [curriculumCourse, setCurriculumCourse] = useState(null); 
+  const [totalQuizCount, setTotalQuizCount]     = useState(0);
+  const [instructors, setInstructors]           = useState([]);
 
   const fetchData = async () => {
     setLoading(true);
+
     try {
-      const [cRes, sRes] = await Promise.all([
+      const [cRes, sRes, instrRes] = await Promise.all([
         courseAPI.getAll({ limit: 100 }),
-        authAPI.getAllStudents()
+        authAPI.getAllStudents(),
+        instructorAPI.getAll()
       ]);
-      setCourses(cRes.data.courses);
-      setStudents(sRes.data.students);
+
+      const courseList = cRes.data.courses || [];
+
+      setCourses(courseList);
+      setStudents(sRes.data.students || []);
+      setInstructors(instrRes.data.instructors || []);
+
+      try {
+        const quizCounts = await Promise.all(
+          courseList.map(c => quizAPI.getByCourse(c._id))
+        );
+
+        const totalQuizzes = quizCounts.reduce(
+          (sum, r) => sum + (r.data.quizzes?.length || 0),
+          0
+        );
+
+        setTotalQuizCount(totalQuizzes);
+      } catch {
+        setTotalQuizCount(0);
+      }
     } catch (err) {
-      console.error(err);
+      console.error('Admin dashboard fetch error:', err);
     } finally {
       setLoading(false);
-    }
-    // Add to fetchData function:
-    const [cRes, sRes] = await Promise.all([
-      courseAPI.getAll({ limit: 100 }),
-      authAPI.getAllStudents()
-    ]);
-    // ... existing code
-
-    // Fetch quiz count
-    try {
-      const quizCounts = await Promise.all(
-        cRes.data.courses.map(c => quizAPI.getByCourse(c._id))
-      );
-      const totalQuizzes = quizCounts.reduce(
-        (sum, r) => sum + (r.data.quizzes?.length || 0), 0
-      );
-      setTotalQuizCount(totalQuizzes);
-    } catch {
-      setTotalQuizCount(0);
     }
   };
 
@@ -384,6 +389,7 @@ const AdminDashboard = () => {
     { id: 'overview',  label: '📊 Overview'  },
     { id: 'courses',   label: '📚 Courses'   },
     { id: 'students',  label: '👥 Students'  },
+    { id: 'instructors', label: '🎓 Instructors' },
     { id: 'analytics', label: '📈 Analytics' },
     { id: 'certificates', label: '🏆 Certificates' },
   ];
@@ -669,6 +675,95 @@ const AdminDashboard = () => {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* ── TAB: Instructors ─────────────────────────────────── */}
+      {activeTab === 'instructors' && (
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm
+        border border-gray-100 dark:border-gray-800 overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+          <h3 className="font-semibold text-gray-900 dark:text-white">
+            All Instructors ({instructors.length})
+          </h3>
+        </div>
+
+        {instructors.length === 0 ? (
+          <div className="text-center py-16 text-gray-400">
+            <GraduationCap size={36} className="mx-auto mb-3" />
+            <p>No instructors yet.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 dark:bg-gray-800/50">
+                  {['Instructor', 'Email', 'Courses', 'Status', 'Actions'].map(h => (
+                    <th key={h} className="text-left px-5 py-3 text-xs
+                      font-semibold text-gray-500 dark:text-gray-400
+                      uppercase tracking-wide">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+                {instructors.map(inst => (
+                  <tr key={inst._id}
+                    className="hover:bg-gray-50 dark:hover:bg-gray-800/30">
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-purple-600
+                          flex items-center justify-center text-white
+                          text-sm font-bold flex-shrink-0">
+                          {inst.name?.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {inst.name}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3 text-gray-500 dark:text-gray-400">
+                      {inst.email}
+                    </td>
+                    <td className="px-5 py-3 text-gray-500 dark:text-gray-400">
+                      {inst.courseCount}
+                    </td>
+                    <td className="px-5 py-3">
+                      <span className={`text-xs px-2.5 py-1 rounded-full
+                        font-medium
+                        ${inst.isApproved
+                          ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+                          : 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400'
+                        }`}>
+                        {inst.isApproved
+                          ? '✅ Approved'
+                          : '⏳ Pending'
+                        }
+                      </span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <button
+                        onClick={async () => {
+                         await instructorAPI.toggleApproval(inst._id);
+                          fetchData();
+                        }}
+                        className={`text-xs px-3 py-1.5 rounded-lg font-medium
+                          transition-colors
+                          ${inst.isApproved
+                            ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/20 dark:text-red-400'
+                            : 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/20 dark:text-green-400'
+                          }`}>
+                        {inst.isApproved
+                          ? 'Revoke'
+                          : 'Approve'
+                        }
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
         </div>
       )}
 

@@ -166,4 +166,17 @@ export const certificateAPI = {
     API.get('/certificates/admin/all')
 };
 
+// ─── Instructor API ───────────────────────────────────────────────────────────
+export const instructorAPI = {
+  getDashboard:      ()         => API.get('/instructor/dashboard'),
+  getMyCourses:      ()         => API.get('/instructor/my-courses'),
+  getMyStudents:     ()         => API.get('/instructor/students'),
+  updateProfile:     (data)     => API.put('/instructor/profile',       data),
+
+  // Admin only
+  getAll:            ()         => API.get('/instructor'),
+  toggleApproval:    (id)       => API.put(`/instructor/${id}/approve`),
+  changeRole:        (id, data) => API.put(`/instructor/${id}/role`,    data)
+};
+
 export default API;

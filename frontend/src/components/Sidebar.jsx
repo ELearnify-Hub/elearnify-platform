@@ -19,6 +19,15 @@ const STUDENT_NAV = [
   { icon: User,            label: 'Profile',        path: '/profile'           },
 ];
 
+const INSTRUCTOR_NAV = [
+  { icon: LayoutDashboard, label: 'Dashboard',   path: '/instructor'          },
+  { icon: BookOpen,        label: 'My Courses',  path: '/instructor/courses'  },
+  { icon: PlusCircle,      label: 'New Course',  path: '/instructor/courses/new' },
+  { icon: Users,           label: 'My Students', path: '/instructor/students' },
+  { icon: BarChart3,       label: 'Analytics',   path: '/instructor/analytics'},
+  { icon: User,            label: 'Profile',     path: '/instructor/profile'  },
+];
+
 const ADMIN_NAV = [
   { icon: LayoutDashboard, label: 'Overview',       path: '/admin'             },
   { icon: BookOpen,        label: 'Courses',        path: '/admin/courses'     },
@@ -33,7 +42,12 @@ const Sidebar = () => {
   const { isAdmin, user, logout }   = useAuth();
   const location  = useLocation();
   const navigate  = useNavigate();
-  const navItems  = isAdmin ? ADMIN_NAV : STUDENT_NAV;
+  const isInstructor = user?.role === 'instructor';
+  const navItems = isAdmin
+    ? ADMIN_NAV
+    : isInstructor
+      ? INSTRUCTOR_NAV
+      : STUDENT_NAV;
 
   const handleLogout = () => { logout(); navigate('/login'); };
 

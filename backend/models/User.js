@@ -1,18 +1,16 @@
- // models/User.js — Blueprint for every user in our database
+// models/User.js — Blueprint for every user in our database
 
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 // ─── Define the Schema ────────────────────────────────────────────────────────
-// A schema is like a form template — it defines what fields exist
-// and what rules they follow
 
 const userSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: [true, 'Name is required'],      // Custom error message
-      trim: true,                                  // Removes extra spaces
+      required: [true, 'Name is required'],
+      trim: true,
       minlength: [2, 'Name must be at least 2 characters'],
       maxlength: [50, 'Name cannot exceed 50 characters']
     },
@@ -20,8 +18,8 @@ const userSchema = new mongoose.Schema(
     email: {
       type: String,
       required: [true, 'Email is required'],
-      unique: true,                                // No two users can have same email
-      lowercase: true,                             // Always stored as lowercase
+      unique: true,
+      lowercase: true,
       trim: true,
       match: [
         /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
@@ -33,19 +31,50 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Password is required'],
       minlength: [6, 'Password must be at least 6 characters'],
-      select: false                                // NEVER return password in queries by default
+      select: false
     },
 
     role: {
       type: String,
-      enum: ['student', 'admin'],                  // Only these two values allowed
-      default: 'student'                           // Every new user is a student by default
+      enum: ['student', 'instructor', 'admin'],
+      default: 'student'
+    },
+
+    // Instructor-specific fields
+    instructorProfile: {
+      bio: {
+        type: String,
+        default: ''
+      },
+      expertise: [
+        {
+          type: String
+        }
+      ],
+      website: {
+        type: String,
+        default: ''
+      },
+      totalStudents: {
+        type: Number,
+        default: 0
+      },
+      totalRevenue: {
+        type: Number,
+        default: 0
+      }
+    },
+
+    isApproved: {
+      type: Boolean,
+      default: false
+      // Admin must approve instructor accounts
     },
 
     enrolledCourses: [
       {
-        type: mongoose.Schema.Types.ObjectId,      // Reference to a Course document
-        ref: 'Course'                              // Links to our Course model
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Course'
       }
     ],
 
@@ -54,72 +83,49 @@ const userSchema = new mongoose.Schema(
       default: ''
     },
 
-    createdAt: {
-      type: Date,
-      default: Date.now
-    },
-
     passwordResetToken: {
       type: String,
-      default: null,
-      // We store the HASHED token here — never the plain token
-      // Same security principle as passwords
+      default: null
+      // Store the HASHED token here, never the plain token
     },
 
     passwordResetExpires: {
       type: Date,
       default: null
-      // Stores when the token expires
-      // We check: is current time BEFORE this date?
+      // Stores when the reset token expires
     }
   },
   {
-    timestamps: true   // Automatically adds createdAt and updatedAt fields
+    timestamps: true
   }
 );
 
-// ─── Pre-Save Middleware (Password Hashing) ───────────────────────────────────
-// This runs AUTOMATICALLY before every .save() call
-// It hashes the password so we NEVER store plain text passwords in the DB
+// ─── Pre-Save Middleware: Password Hashing ────────────────────────────────────
 
 userSchema.pre('save', async function (next) {
-  // 'this' refers to the current user document being saved
-
-  // IMPORTANT: Only hash if password was actually changed
-  // Without this check, every profile update would re-hash the already-hashed password
+  // Only hash password if it was modified or newly created
   if (!this.isModified('password')) {
     return next();
   }
 
   try {
-    // bcrypt.genSalt(10) — generates a "salt" (random data added to password before hashing)
-    // The number 10 is the "cost factor" — higher = more secure but slower
-    // 10 is the industry standard balance between security and performance
     const salt = await bcrypt.genSalt(10);
 
-    // Replace the plain text password with the hashed version
     this.password = await bcrypt.hash(this.password, salt);
 
-    next(); // Continue to save
+    next();
   } catch (error) {
-    next(error); // Pass error to Express error handler
+    next(error);
   }
 });
 
-// ─── Instance Method: Compare Password ───────────────────────────────────────
-// This method is available on every user document
-// We call it during login to check if entered password matches stored hash
-// Usage: const isMatch = await user.comparePassword('enteredPassword')
+// ─── Instance Method: Compare Password ────────────────────────────────────────
 
 userSchema.methods.comparePassword = async function (enteredPassword) {
-  // bcrypt.compare() hashes the entered password and compares with stored hash
-  // Returns true if they match, false if not
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-// ─── Create and Export the Model ─────────────────────────────────────────────
-// mongoose.model('User', userSchema) creates a 'users' collection in MongoDB
-// (Mongoose automatically pluralizes and lowercases the name)
+// ─── Create and Export the Model ──────────────────────────────────────────────
 
 const User = mongoose.model('User', userSchema);
 

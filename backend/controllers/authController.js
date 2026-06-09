@@ -39,6 +39,7 @@ const register = async (req, res) => {
 
     // Step 3: Check if user with this email already exists
     const existingUser = await User.findOne({ email });
+
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -47,28 +48,28 @@ const register = async (req, res) => {
     }
 
     // Step 4: Create the user
-    // NOTE: We pass the plain password here
-    // The pre-save middleware in User.js will hash it automatically
+    // Plain password is passed here.
+    // User.js pre-save middleware will hash it automatically.
     const user = await User.create({
       name,
       email,
       password,
-      // Prevent someone from registering as admin via the API
-      // Admin accounts should be created manually or via a separate secure process
-      role: role === 'admin' ? 'student' : (role || 'student')
+
+      // Students and instructors can self-register.
+      // Admin accounts can never be self-registered from the API.
+      role: ['student', 'instructor'].includes(role) ? role : 'student'
     });
 
     // Step 5: Generate JWT token for immediate login after registration
     const token = generateToken(user._id);
+
     // Send welcome email without blocking the response
-    // .catch() ensures email errors don't crash the registration
     sendWelcomeEmail({
-      toEmail:  user.email,
+      toEmail: user.email,
       userName: user.name
     }).catch(err => console.error('Welcome email error:', err.message));
 
     // Step 6: Send response
-    // We manually build the response to avoid sending sensitive fields
     res.status(201).json({
       success: true,
       message: 'Account created successfully',
@@ -78,6 +79,7 @@ const register = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        isApproved: user.isApproved,
         enrolledCourses: user.enrolledCourses
       }
     });
@@ -86,6 +88,7 @@ const register = async (req, res) => {
     // Handle Mongoose validation errors nicely
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(e => e.message);
+
       return res.status(400).json({
         success: false,
         message: messages.join(', ')
@@ -93,6 +96,7 @@ const register = async (req, res) => {
     }
 
     console.error('Register error:', error);
+
     res.status(500).json({
       success: false,
       message: 'Server error during registration'
@@ -153,6 +157,7 @@ const login = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        isApproved: user.isApproved,
         enrolledCourses: user.enrolledCourses
       }
     });

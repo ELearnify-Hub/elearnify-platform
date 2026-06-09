@@ -79,4 +79,32 @@ const adminOnly = (req, res, next) => {
   }
 };
 
-module.exports = { protect, adminOnly };
+// ── Instructor OR Admin middleware ────────────────────────────────────────────
+// Use on routes that both instructors and admins can access
+const instructorOrAdmin = (req, res, next) => {
+  if (req.user && (
+    req.user.role === 'instructor' ||
+    req.user.role === 'admin'
+  )) {
+    next();
+  } else {
+    return res.status(403).json({
+      success: false,
+      message: 'Access denied. Instructors and Admins only.'
+    });
+  }
+};
+
+// ── Instructor only middleware ────────────────────────────────────────────────
+const instructorOnly = (req, res, next) => {
+  if (req.user && req.user.role === 'instructor') {
+    next();
+  } else {
+    return res.status(403).json({
+      success: false,
+      message: 'Access denied. Instructors only.'
+    });
+  }
+};
+
+module.exports = { protect, adminOnly, instructorOnly, instructorOrAdmin };
