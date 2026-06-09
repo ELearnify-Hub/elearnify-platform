@@ -1,25 +1,46 @@
- // services/api.js
-// Central Axios configuration — all API calls go through here
-// Think of this as your "remote control" for the backend
-
+// services/api.js
 import axios from 'axios';
 
-// ─── Server URL ──────────────────────────────────────────────────────────────
-// Vite reads this from .env locally and from Vercel Environment Variables in production.
-// Production example:
-// VITE_SERVER_URL=https://elearning-backend-76wm.onrender.com/api
-const RAW_API_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:5000/api';
+// ─────────────────────────────────────────────────────────────────────────────
+// Robust API URL handling
+//
+// Local development fallback:
+//   http://localhost:5000/api
+//
+// Vercel production fallback:
+//   https://elearning-backend-76wm.onrender.com/api
+//
+// Vercel env should still be:
+//   VITE_SERVER_URL=https://elearning-backend-76wm.onrender.com/api
+//
+// This file also protects you if VITE_SERVER_URL is missing on Vercel.
+// ─────────────────────────────────────────────────────────────────────────────
 
-// Normalize URL so we do not accidentally create /api/api routes.
-export const API_BASE_URL = RAW_API_URL.replace(/\/+$/, '').endsWith('/api')
-  ? RAW_API_URL.replace(/\/+$/, '')
-  : `${RAW_API_URL.replace(/\/+$/, '')}/api`;
+const PRODUCTION_BACKEND_URL = 'https://elearning-backend-76wm.onrender.com';
+const LOCAL_BACKEND_URL = 'http://localhost:5000';
 
-// Used for constructing image/video/pdf URLs from stored paths like uploads/file.jpg
+const isBrowser = typeof window !== 'undefined';
+const isProductionHost =
+  isBrowser &&
+  !['localhost', '127.0.0.1'].includes(window.location.hostname);
+
+const rawServerUrl =
+  import.meta.env.VITE_SERVER_URL ||
+  (isProductionHost ? PRODUCTION_BACKEND_URL : LOCAL_BACKEND_URL);
+
+const normalizeApiBaseUrl = (url) => {
+  const cleanUrl = String(url || '').replace(/\/+$/, '');
+
+  if (cleanUrl.endsWith('/api')) {
+    return cleanUrl;
+  }
+
+  return `${cleanUrl}/api`;
+};
+
+export const API_BASE_URL = normalizeApiBaseUrl(rawServerUrl);
 export const SERVER_URL = API_BASE_URL.replace(/\/api$/, '');
 
-// ─── Create Axios Instance ────────────────────────────────────────────────────
-// Instead of typing the full URL every time, we set a base URL once
 const API = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -27,18 +48,11 @@ const API = axios.create({
   }
 });
 
-// ─── Request Interceptor ──────────────────────────────────────────────────────
-// This runs BEFORE every request is sent
-// It automatically attaches the JWT token to every request
-// So we don't have to manually add headers in every API call
-
 API.interceptors.request.use(
   (config) => {
-    // Get token from localStorage (we store it there after login)
     const token = localStorage.getItem('token');
 
     if (token) {
-      // Attach token to Authorization header
       config.headers.Authorization = `Bearer ${token}`;
     }
 
@@ -47,48 +61,45 @@ API.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// ─── Response Interceptor ─────────────────────────────────────────────────────
-// This runs AFTER every response is received
-// If the server returns 401 (Unauthorized), the token has expired
-// → Automatically log the user out
-
 API.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Token expired or invalid — clear storage and redirect to login
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
-    }
+    // Do not redirect for every 401 here.
+    // Some admin dashboard requests can fail individually while public courses
+    // should still load. Let pages/components decide what to do.
     return Promise.reject(error);
   }
 );
 
-// ─── Course API Calls ─────────────────────────────────────────────────────────
 export const courseAPI = {
   getAll: (params) => API.get('/courses', { params }),
   getById: (id) => API.get(`/courses/${id}`),
 
-  // For file uploads we use FormData, not JSON
-  // So we override Content-Type to let browser set multipart boundary
-  create: (formData) => API.post('/courses', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  }),
-  update: (id, formData) => API.put(`/courses/${id}`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  }),
+  create: (formData) =>
+    API.post('/courses', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+
+  update: (id, formData) =>
+    API.put(`/courses/${id}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+
   delete: (id) => API.delete(`/courses/${id}`),
-  uploadVideo: (id, formData) => API.post(`/courses/${id}/upload-video`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  }),
-  uploadPDF: (id, formData) => API.post(`/courses/${id}/upload-pdf`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  }),
+
+  uploadVideo: (id, formData) =>
+    API.post(`/courses/${id}/upload-video`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+
+  uploadPDF: (id, formData) =>
+    API.post(`/courses/${id}/upload-pdf`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+
   togglePublish: (id) => API.put(`/courses/${id}/publish`)
 };
 
-// ─── Enrollment API Calls ─────────────────────────────────────────────────────
 export const enrollmentAPI = {
   enroll: (courseId) => API.post(`/enrollments/${courseId}`),
   unenroll: (courseId) => API.delete(`/enrollments/${courseId}`),
@@ -96,24 +107,22 @@ export const enrollmentAPI = {
 };
 
 export const authAPI = {
-  register:         (data)         => API.post('/auth/register', data),
-  login:            (data)         => API.post('/auth/login',    data),
-  getProfile:       ()             => API.get('/auth/profile'),
-  getAllStudents:    ()             => API.get('/auth/students'),
+  register: (data) => API.post('/auth/register', data),
+  login: (data) => API.post('/auth/login', data),
+  getProfile: () => API.get('/auth/profile'),
+  getAllStudents: () => API.get('/auth/students'),
 
-  // ── Password Reset (NEW) ───────────────────────────────────
-  forgotPassword:   (data)         => API.post('/auth/forgot-password',          data),
-  verifyResetToken: (token)        => API.get(`/auth/verify-reset-token/${token}`),
-  resetPassword:    (token, data)  => API.post(`/auth/reset-password/${token}`,  data)
+  forgotPassword: (data) => API.post('/auth/forgot-password', data),
+  verifyResetToken: (token) => API.get(`/auth/verify-reset-token/${token}`),
+  resetPassword: (token, data) =>
+    API.post(`/auth/reset-password/${token}`, data)
 };
 
-// ─── Module & Lesson API ──────────────────────────────────────────────────────
 export const moduleAPI = {
-  // ── Modules ──────────────────────────────────────────────────────────────
-  getModules:   (courseId) =>
+  getModules: (courseId) =>
     API.get(`/courses/${courseId}/modules`),
 
-  addModule:    (courseId, data) =>
+  addModule: (courseId, data) =>
     API.post(`/courses/${courseId}/modules`, data),
 
   updateModule: (courseId, moduleId, data) =>
@@ -122,7 +131,6 @@ export const moduleAPI = {
   deleteModule: (courseId, moduleId) =>
     API.delete(`/courses/${courseId}/modules/${moduleId}`),
 
-  // ── Lessons ──────────────────────────────────────────────────────────────
   addLesson: (courseId, moduleId, formData) =>
     API.post(
       `/courses/${courseId}/modules/${moduleId}/lessons`,
@@ -140,24 +148,23 @@ export const moduleAPI = {
   deleteLesson: (courseId, moduleId, lessonId) =>
     API.delete(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}`),
 
-  // ── Progress ──────────────────────────────────────────────────────────────
   markComplete: (courseId, lessonId, moduleId) =>
-    API.post(`/courses/${courseId}/modules/progress`, { lessonId, moduleId })
+    API.post(`/courses/${courseId}/modules/progress`, {
+      lessonId,
+      moduleId
+    })
 };
 
-// ─── Quiz API ─────────────────────────────────────────────────────────────────
 export const quizAPI = {
-  // Admin
-  create:         (data)     => API.post('/quiz',                         data),
-  update:         (id, data) => API.put(`/quiz/${id}`,                    data),
-  delete:         (id)       => API.delete(`/quiz/${id}`),
-  getAdminResults:(id)       => API.get(`/quiz/${id}/admin-results`),
+  create: (data) => API.post('/quiz', data),
+  update: (id, data) => API.put(`/quiz/${id}`, data),
+  delete: (id) => API.delete(`/quiz/${id}`),
+  getAdminResults: (id) => API.get(`/quiz/${id}/admin-results`),
 
-  // Shared
-  getByCourse:    (courseId) => API.get(`/quiz/course/${courseId}`),
-  getById:        (id)       => API.get(`/quiz/${id}`),
-  submit:         (id, data) => API.post(`/quiz/${id}/submit`,            data),
-  getMyResults:   (id)       => API.get(`/quiz/${id}/results`)
+  getByCourse: (courseId) => API.get(`/quiz/course/${courseId}`),
+  getById: (id) => API.get(`/quiz/${id}`),
+  submit: (id, data) => API.post(`/quiz/${id}/submit`, data),
+  getMyResults: (id) => API.get(`/quiz/${id}/results`)
 };
 
 export const certificateAPI = {
@@ -176,17 +183,15 @@ export const certificateAPI = {
     API.get('/certificates/admin/all')
 };
 
-// ─── Instructor API ───────────────────────────────────────────────────────────
 export const instructorAPI = {
-  getDashboard:      ()         => API.get('/instructor/dashboard'),
-  getMyCourses:      ()         => API.get('/instructor/my-courses'),
-  getMyStudents:     ()         => API.get('/instructor/students'),
-  updateProfile:     (data)     => API.put('/instructor/profile',       data),
+  getDashboard: () => API.get('/instructor/dashboard'),
+  getMyCourses: () => API.get('/instructor/my-courses'),
+  getMyStudents: () => API.get('/instructor/students'),
+  updateProfile: (data) => API.put('/instructor/profile', data),
 
-  // Admin only
-  getAll:            ()         => API.get('/instructor'),
-  toggleApproval:    (id)       => API.put(`/instructor/${id}/approve`),
-  changeRole:        (id, data) => API.put(`/instructor/${id}/role`,    data)
+  getAll: () => API.get('/instructor'),
+  toggleApproval: (id) => API.put(`/instructor/${id}/approve`),
+  changeRole: (id, data) => API.put(`/instructor/${id}/role`, data)
 };
 
 export default API;

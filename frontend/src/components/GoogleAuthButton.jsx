@@ -3,18 +3,13 @@
 // Used on both Login and Register pages
 
 import { motion } from 'framer-motion';
-
-const BACKEND_URL =
-  import.meta.env.VITE_SERVER_URL || 'http://localhost:5000/api';
+import { API_BASE_URL } from '../services/api';
 
 const GoogleAuthButton = ({ label = 'Continue with Google', disabled = false }) => {
   const handleGoogleAuth = () => {
     if (disabled) return;
 
-    // VITE_SERVER_URL should be:
-    // Production: https://elearning-backend-76wm.onrender.com/api
-    // Local:      http://localhost:5000/api
-    window.location.href = `${BACKEND_URL}/auth/google`;
+    window.location.href = `${API_BASE_URL}/auth/google`;
   };
 
   return (
@@ -33,7 +28,6 @@ const GoogleAuthButton = ({ label = 'Continue with Google', disabled = false }) 
         disabled:opacity-50 disabled:cursor-not-allowed shadow-sm
         hover:shadow-md"
     >
-      {/* Google Logo SVG */}
       <svg width="20" height="20" viewBox="0 0 48 48">
         <path
           fill="#FFC107"
