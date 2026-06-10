@@ -63,10 +63,10 @@ const Sidebar = () => {
     <motion.aside
       animate={{ width: collapsed ? 70 : 260 }}
       transition={{ duration: 0.3, ease: 'easeInOut' }}
-      className="relative flex flex-col h-screen bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 shadow-sm flex-shrink-0 z-20"
+      className="relative flex flex-col h-screen bg-[var(--sidebar-bg)] border-r border-[var(--sidebar-border)] shadow-[var(--shadow-sm)] flex-shrink-0 z-20 transition-colors duration-200"
     >
       {/* ── Logo ──────────────────────────────────────────────── */}
-      <div className="flex items-center h-16 px-4 border-b border-gray-200 dark:border-gray-800">
+      <div className="flex items-center h-16 px-4 border-b border-[var(--sidebar-border)]">
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
             <GraduationCap size={18} className="text-white" />
@@ -79,7 +79,7 @@ const Sidebar = () => {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -10 }}
                 transition={{ duration: 0.2 }}
-                className="font-bold text-gray-900 dark:text-white text-lg truncate"
+                className="font-bold text-[var(--text-primary)] text-lg truncate"
               >
                 ELearnify
               </motion.span>
@@ -100,8 +100,8 @@ const Sidebar = () => {
               title={collapsed ? label : undefined}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 active
-                  ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
+                  ? 'bg-[var(--sidebar-active)] text-blue-600 dark:text-blue-400'
+                  : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'
               }`}
             >
               {/* Active indicator bar */}
@@ -133,9 +133,9 @@ const Sidebar = () => {
       </nav>
 
       {/* ── User Profile + Logout ─────────────────────────────── */}
-      <div className="px-3 py-4 border-t border-gray-200 dark:border-gray-800 space-y-1">
+      <div className="px-3 py-4 border-t border-[var(--sidebar-border)] space-y-1">
         <div
-          className={`flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 ${
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[var(--bg-secondary)] ${
             collapsed ? 'justify-center' : ''
           }`}
         >
@@ -161,11 +161,11 @@ const Sidebar = () => {
                 exit={{ opacity: 0 }}
                 className="min-w-0 flex-1"
               >
-                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                <p className="text-sm font-medium text-[var(--text-primary)] truncate">
                   {user?.name}
                 </p>
 
-                <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+                <p className="text-xs text-[var(--text-secondary)] capitalize">
                   {user?.role}
                 </p>
               </motion.div>
@@ -198,12 +198,12 @@ const Sidebar = () => {
       {/* ── Collapse Toggle Button ─────────────────────────────── */}
       <button
         onClick={() => setCollapsed(p => !p)}
-        className="absolute -right-3 top-20 w-6 h-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-full shadow-sm flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+        className="absolute -right-3 top-20 w-6 h-6 bg-[var(--surface-1)] border border-[var(--border-light)] rounded-full shadow-[var(--shadow-sm)] flex items-center justify-center hover:bg-[var(--bg-hover)] transition-colors"
       >
         {collapsed ? (
-          <ChevronRight size={14} className="text-gray-500" />
+          <ChevronRight size={14} className="text-[var(--text-secondary)]" />
         ) : (
-          <ChevronLeft size={14} className="text-gray-500" />
+          <ChevronLeft size={14} className="text-[var(--text-secondary)]" />
         )}
       </button>
     </motion.aside>

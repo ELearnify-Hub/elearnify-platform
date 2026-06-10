@@ -74,14 +74,14 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-950 dark:to-slate-900 flex items-center justify-center px-4">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg w-full max-w-md p-8 border border-gray-100 dark:border-gray-800">
+    <div className="min-h-screen bg-[var(--bg-secondary)] transition-colors duration-200 flex items-center justify-center px-4">
+      <div className="bg-[var(--surface-1)] rounded-2xl shadow-[var(--shadow-lg)] w-full max-w-md p-8 border border-[var(--border-light)] transition-colors duration-200">
 
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-100 rounded-full mb-4">
+          <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-100 dark:bg-blue-900/30 rounded-full mb-4">
             <svg
-              className="w-7 h-7 text-blue-600"
+              className="w-7 h-7 text-blue-600 dark:text-blue-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -95,18 +95,18 @@ const LoginPage = () => {
             </svg>
           </div>
 
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">
             Welcome back!
           </h1>
 
-          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+          <p className="text-[var(--text-secondary)] text-sm mt-1">
             Sign in to continue learning
           </p>
         </div>
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 text-sm flex items-start gap-2">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg mb-6 text-sm flex items-start gap-2">
             <span>⚠️</span>
             <span>{error}</span>
           </div>
@@ -117,7 +117,7 @@ const LoginPage = () => {
 
           {/* Email */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
               Email Address
             </label>
 
@@ -128,13 +128,13 @@ const LoginPage = () => {
               onChange={handleChange}
               placeholder="john@example.com"
               required
-              className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              className="w-full border border-[var(--border-light)] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-[var(--surface-1)] text-[var(--text-primary)]"
             />
           </div>
 
           {/* Password */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
               Password
             </label>
 
@@ -145,7 +145,7 @@ const LoginPage = () => {
               onChange={handleChange}
               placeholder="Enter your password"
               required
-              className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              className="w-full border border-[var(--border-light)] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-[var(--surface-1)] text-[var(--text-primary)]"
             />
           </div>
 
@@ -153,7 +153,7 @@ const LoginPage = () => {
           <div className="flex justify-end -mt-2">
             <Link
               to="/forgot-password"
-              className="text-sm text-blue-600 hover:underline"
+              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
             >
               Forgot password?
             </Link>
@@ -198,11 +198,11 @@ const LoginPage = () => {
           {/* Divider */}
           <div className="relative my-2">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200 dark:border-gray-700" />
+              <div className="w-full border-t border-[var(--border-light)]" />
             </div>
 
             <div className="relative flex justify-center">
-              <span className="bg-white dark:bg-gray-900 px-3 text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">
+              <span className="bg-[var(--surface-1)] px-3 text-xs text-[var(--text-muted)] uppercase tracking-wide">
                 or continue with
               </span>
             </div>
@@ -219,11 +219,11 @@ const LoginPage = () => {
         </div>
 
         {/* Register Link */}
-        <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-5">
+        <p className="text-center text-sm text-[var(--text-secondary)] mt-5">
           Don't have an account?{' '}
           <Link
             to="/register"
-            className="text-blue-600 font-medium hover:underline"
+            className="text-blue-600 dark:text-blue-400 font-medium hover:underline"
           >
             Create one free
           </Link>

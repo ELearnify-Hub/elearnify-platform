@@ -1,11 +1,17 @@
-// components/CourseCard.jsx — Reusable card displayed in course listings
+// components/CourseCard.jsx
 import { Link } from 'react-router-dom';
 import { SERVER_URL } from '../services/api';
 
 const LEVEL_COLORS = {
-  Beginner:     'bg-green-100 text-green-700',
-  Intermediate: 'bg-yellow-100 text-yellow-700',
-  Advanced:     'bg-red-100 text-red-700'
+  Beginner: 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400',
+  Intermediate: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400',
+  Advanced: 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400'
+};
+
+const getThumbnailUrl = (thumbnail) => {
+  if (!thumbnail) return '';
+  if (thumbnail.startsWith('http://') || thumbnail.startsWith('https://')) return thumbnail;
+  return `${SERVER_URL}/${thumbnail}`;
 };
 
 const CourseCard = ({ course }) => {
@@ -23,65 +29,59 @@ const CourseCard = ({ course }) => {
   } = course;
 
   return (
-    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden flex flex-col">
-
-      {/* Thumbnail */}
+    <div className="flex flex-col overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--surface-1)] shadow-[var(--shadow-sm)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-md)]">
       <div className="relative">
         {thumbnail ? (
           <img
-            src={`${SERVER_URL}/${thumbnail}`}
+            src={getThumbnailUrl(thumbnail)}
             alt={title}
-            className="w-full h-44 object-cover"
+            className="h-44 w-full object-cover"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              e.currentTarget.nextElementSibling?.classList.remove('hidden');
+            }}
           />
-        ) : (
-          /* Placeholder when no thumbnail */
-          <div className="w-full h-44 bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center">
-            <svg className="w-16 h-16 text-white opacity-50" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/>
-            </svg>
-          </div>
-        )}
+        ) : null}
 
-        {/* Price badge */}
-        <span className="absolute top-3 right-3 bg-white text-blue-700 font-bold text-sm px-2 py-1 rounded-lg shadow">
+        <div className={`${thumbnail ? 'hidden' : ''} flex h-44 w-full items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600`}>
+          <svg className="h-16 w-16 text-white opacity-60" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3z" />
+          </svg>
+        </div>
+
+        <span className="absolute right-3 top-3 rounded-lg bg-white px-2 py-1 text-sm font-bold text-blue-700 shadow">
           {price === 0 ? 'Free' : `$${price}`}
         </span>
       </div>
 
-      {/* Card Body */}
-      <div className="p-4 flex flex-col flex-grow">
-
-        {/* Category + Level */}
-        <div className="flex items-center gap-2 mb-2">
-          <span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full">
+      <div className="flex flex-grow flex-col p-4">
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700 dark:bg-blue-900/20 dark:text-blue-400">
             {category}
           </span>
-          <span className={`text-xs px-2 py-0.5 rounded-full ${LEVEL_COLORS[level] || 'bg-gray-100 text-gray-600'}`}>
+          <span className={`rounded-full px-2 py-0.5 text-xs ${LEVEL_COLORS[level] || 'bg-[var(--bg-secondary)] text-[var(--text-secondary)]'}`}>
             {level}
           </span>
         </div>
 
-        {/* Title */}
-        <h3 className="font-bold text-gray-900 dark:text-white text-base mb-1 line-clamp-2 leading-snug">
+        <h3 className="mb-1 line-clamp-2 text-base font-bold leading-snug text-[var(--text-primary)]">
           {title}
         </h3>
 
-        {/* Description */}
-        <p className="text-gray-500 dark:text-gray-400 text-sm mb-3 line-clamp-2 flex-grow">
+        <p className="mb-3 line-clamp-2 flex-grow text-sm text-[var(--text-secondary)]">
           {description}
         </p>
 
-        {/* Meta info */}
-        <div className="text-xs text-gray-400 dark:text-gray-500 flex flex-col gap-1 mb-4">
-          <span>👨‍🏫 {instructor}</span>
+        <div className="mb-4 flex flex-col gap-1 text-xs text-[var(--text-muted)]">
+          <span>👨‍🏫 {typeof instructor === 'object' ? instructor?.name : instructor}</span>
           {duration && <span>⏱ {duration}</span>}
           <span>👥 {enrolledStudents.length} students enrolled</span>
         </div>
 
-        {/* CTA Button */}
         <Link
           to={`/courses/${_id}`}
-          className="mt-auto block text-center bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition-colors text-sm">
+          className="mt-auto block rounded-xl bg-blue-600 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+        >
           View Course
         </Link>
       </div>

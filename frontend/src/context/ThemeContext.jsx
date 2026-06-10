@@ -1,55 +1,71 @@
 // context/ThemeContext.jsx
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+// Single source of truth for light/dark theme across the full app.
+
+import { createContext, useContext, useLayoutEffect, useState } from 'react';
 
 const ThemeContext = createContext(null);
-const STORAGE_KEY = 'elearnify-theme';
 
 const getInitialTheme = () => {
-  if (typeof window === 'undefined') return 'light';
-
-  const savedTheme = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('theme');
-  if (savedTheme === 'light' || savedTheme === 'dark') return savedTheme;
-
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  try {
+    const storedTheme = localStorage.getItem('elearnify-theme');
+    if (storedTheme === 'light' || storedTheme === 'dark') return storedTheme;
+  } catch {
+    // localStorage can fail in private mode
+  }
+  return 'light';
 };
 
 const applyThemeToDocument = (theme) => {
-  if (typeof document === 'undefined') return;
-
   const root = document.documentElement;
-  const body = document.body;
-
   root.classList.remove('light', 'dark');
-  body.classList.remove('light', 'dark');
-
   root.classList.add(theme);
-  body.classList.add(theme);
-  root.dataset.theme = theme;
-  body.dataset.theme = theme;
-  root.style.colorScheme = theme;
+
+  const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+  if (metaThemeColor) {
+    metaThemeColor.setAttribute('content', theme === 'dark' ? '#0f172a' : '#ffffff');
+  }
 };
 
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(getInitialTheme);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     applyThemeToDocument(theme);
-    localStorage.setItem(STORAGE_KEY, theme);
-    localStorage.setItem('theme', theme); // keeps compatibility with older code
+
+    try {
+      localStorage.setItem('elearnify-theme', theme);
+    } catch {
+      // Ignore storage errors
+    }
   }, [theme]);
 
-  const value = useMemo(() => ({
-    theme,
-    isDark: theme === 'dark',
-    setTheme,
-    toggleTheme: () => setTheme(prev => (prev === 'light' ? 'dark' : 'light')),
-  }), [theme]);
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  };
 
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+  const setLightTheme = () => setTheme('light');
+  const setDarkTheme = () => setTheme('dark');
+
+  return (
+    <ThemeContext.Provider
+      value={{
+        theme,
+        isDark: theme === 'dark',
+        isLight: theme === 'light',
+        toggleTheme,
+        setLightTheme,
+        setDarkTheme
+      }}
+    >
+      {children}
+    </ThemeContext.Provider>
+  );
 };
 
 export const useTheme = () => {
   const ctx = useContext(ThemeContext);
-  if (!ctx) throw new Error('useTheme must be inside ThemeProvider');
+  if (!ctx) throw new Error('useTheme must be used inside ThemeProvider');
   return ctx;
 };
+
+export default ThemeContext;

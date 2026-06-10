@@ -20,7 +20,12 @@ const RegisterPage = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Single handler for all input changes
+  const labelClassName =
+    'block text-sm font-medium text-[var(--text-primary)] mb-1';
+
+  const inputClassName =
+    'w-full border border-[var(--border-light)] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-[var(--surface-1)] text-[var(--text-primary)] transition';
+
   const handleChange = (e) => {
     setFormData(prev => ({
       ...prev,
@@ -33,7 +38,6 @@ const RegisterPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Client-side validation
     if (formData.password !== formData.confirmPassword) {
       return setError('Passwords do not match');
     }
@@ -53,10 +57,8 @@ const RegisterPage = () => {
         role: formData.role || 'student'
       });
 
-      // Save token + user to context and localStorage
       login(data.token, data.user);
 
-      // Redirect based on role
       const roleRedirects = {
         admin: '/admin',
         instructor: '/instructor',
@@ -64,7 +66,6 @@ const RegisterPage = () => {
       };
 
       navigate(roleRedirects[data.user.role] || '/dashboard');
-
     } catch (err) {
       setError(
         err.response?.data?.message ||
@@ -76,14 +77,14 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-950 dark:to-slate-900 flex items-center justify-center px-4 py-12">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg w-full max-w-md p-8 border border-gray-100 dark:border-gray-800">
+    <div className="min-h-screen bg-[var(--bg-secondary)] transition-colors duration-200 flex items-center justify-center px-4 py-12">
+      <div className="bg-[var(--surface-1)] rounded-2xl shadow-[var(--shadow-lg)] w-full max-w-md p-8 border border-[var(--border-light)] transition-colors duration-200">
 
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-100 rounded-full mb-4">
+          <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-100 dark:bg-blue-900/30 rounded-full mb-4">
             <svg
-              className="w-7 h-7 text-blue-600"
+              className="w-7 h-7 text-blue-600 dark:text-blue-400"
               fill="currentColor"
               viewBox="0 0 24 24"
             >
@@ -91,18 +92,18 @@ const RegisterPage = () => {
             </svg>
           </div>
 
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">
             Create your account
           </h1>
 
-          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+          <p className="text-[var(--text-secondary)] text-sm mt-1">
             Start your learning journey today
           </p>
         </div>
 
         {/* Error Alert */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 text-sm flex items-start gap-2">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg mb-6 text-sm flex items-start gap-2">
             <span>⚠️</span>
             <span>{error}</span>
           </div>
@@ -113,7 +114,7 @@ const RegisterPage = () => {
 
           {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className={labelClassName}>
               Full Name
             </label>
 
@@ -124,13 +125,13 @@ const RegisterPage = () => {
               onChange={handleChange}
               placeholder="John Doe"
               required
-              className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              className={inputClassName}
             />
           </div>
 
           {/* Role Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className={labelClassName}>
               I want to join as
             </label>
 
@@ -159,20 +160,20 @@ const RegisterPage = () => {
                   className={`p-3 border-2 rounded-xl text-left transition-all ${
                     formData.role === value
                       ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'
+                      : 'border-[var(--border-light)] bg-[var(--surface-1)] hover:border-blue-300'
                   }`}
                 >
                   <p
                     className={`font-semibold text-sm ${
                       formData.role === value
                         ? 'text-blue-700 dark:text-blue-400'
-                        : 'text-gray-700 dark:text-gray-300'
+                        : 'text-[var(--text-primary)]'
                     }`}
                   >
                     {label}
                   </p>
 
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  <p className="text-xs text-[var(--text-secondary)] mt-0.5">
                     {desc}
                   </p>
                 </button>
@@ -188,7 +189,7 @@ const RegisterPage = () => {
 
           {/* Email */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className={labelClassName}>
               Email Address
             </label>
 
@@ -199,13 +200,13 @@ const RegisterPage = () => {
               onChange={handleChange}
               placeholder="john@example.com"
               required
-              className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              className={inputClassName}
             />
           </div>
 
           {/* Password */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className={labelClassName}>
               Password
             </label>
 
@@ -216,13 +217,13 @@ const RegisterPage = () => {
               onChange={handleChange}
               placeholder="Min. 6 characters"
               required
-              className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              className={inputClassName}
             />
           </div>
 
           {/* Confirm Password */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className={labelClassName}>
               Confirm Password
             </label>
 
@@ -233,7 +234,7 @@ const RegisterPage = () => {
               onChange={handleChange}
               placeholder="Re-enter your password"
               required
-              className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              className={inputClassName}
             />
           </div>
 
@@ -276,11 +277,11 @@ const RegisterPage = () => {
           {/* Divider */}
           <div className="relative my-2">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200 dark:border-gray-700" />
+              <div className="w-full border-t border-[var(--border-light)]" />
             </div>
 
             <div className="relative flex justify-center">
-              <span className="bg-white dark:bg-gray-900 px-3 text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">
+              <span className="bg-[var(--surface-1)] px-3 text-xs text-[var(--text-secondary)] uppercase tracking-wide">
                 or sign up with
               </span>
             </div>
@@ -290,18 +291,18 @@ const RegisterPage = () => {
           <GoogleAuthButton label="Sign up with Google" />
 
           {/* Note about Google accounts */}
-          <p className="text-center text-xs text-gray-400 dark:text-gray-500">
+          <p className="text-center text-xs text-[var(--text-secondary)]">
             Google accounts are registered as Students by default.
             You can change your role from your profile settings.
           </p>
         </form>
 
         {/* Footer */}
-        <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
+        <p className="text-center text-sm text-[var(--text-secondary)] mt-6">
           Already have an account?{' '}
           <Link
             to="/login"
-            className="text-blue-600 font-medium hover:underline"
+            className="text-blue-600 dark:text-blue-400 font-medium hover:underline"
           >
             Sign in
           </Link>

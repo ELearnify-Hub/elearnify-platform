@@ -1,117 +1,252 @@
 // pages/HomePage.jsx
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import {
+  ArrowRight,
+  Award,
+  BookOpen,
+  FileText,
+  Flame,
+  PlayCircle,
+  Shield,
+  Star,
+  TrendingUp,
+  Users
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const FEATURES = [
-  { icon: '🎥', title: 'Video Lessons',    desc: 'Watch high-quality video lectures at your own pace.' },
-  { icon: '📄', title: 'Study Materials',  desc: 'Download PDFs and reference materials anytime.' },
-  { icon: '🏆', title: 'Certifications',   desc: 'Complete courses and showcase your new skills.' },
-  { icon: '🔒', title: 'Secure Platform',  desc: 'JWT-secured accounts keep your data safe.' }
+  {
+    icon: PlayCircle,
+    title: 'Video Lessons',
+    desc: 'Watch expert-led video lectures at your own pace, anywhere.',
+    color: 'text-blue-600 dark:text-blue-400',
+    bg: 'bg-blue-50 dark:bg-blue-900/20'
+  },
+  {
+    icon: FileText,
+    title: 'Study Materials',
+    desc: 'Download PDFs, notes and reference materials anytime.',
+    color: 'text-purple-600 dark:text-purple-400',
+    bg: 'bg-purple-50 dark:bg-purple-900/20'
+  },
+  {
+    icon: Award,
+    title: 'Certificates',
+    desc: 'Complete courses and earn certificates to showcase your skills.',
+    color: 'text-amber-600 dark:text-amber-400',
+    bg: 'bg-amber-50 dark:bg-amber-900/20'
+  },
+  {
+    icon: Shield,
+    title: 'Secure Platform',
+    desc: 'JWT-secured accounts and Google OAuth keep your data safe.',
+    color: 'text-green-600 dark:text-green-400',
+    bg: 'bg-green-50 dark:bg-green-900/20'
+  }
 ];
 
 const CATEGORIES = [
-  'Web Development', 'Mobile Development', 'Data Science',
-  'Machine Learning', 'Design', 'Business'
+  'Web Development',
+  'Mobile Development',
+  'Data Science',
+  'Machine Learning',
+  'Design',
+  'Business'
+];
+
+const STATS = [
+  { icon: BookOpen, value: '50+', label: 'Courses' },
+  { icon: Users, value: '1K+', label: 'Students' },
+  { icon: Star, value: '4.9', label: 'Avg Rating' },
+  { icon: TrendingUp, value: '20+', label: 'Instructors' }
 ];
 
 const HomePage = () => {
   const { isLoggedIn } = useAuth();
 
   return (
-    <div className="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-white">
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-blue-50 via-white to-indigo-100 text-slate-900 dark:from-slate-900 dark:via-slate-800 dark:to-slate-950 dark:text-white">
-        <div className="max-w-6xl mx-auto px-4 py-24 flex flex-col items-center text-center gap-6">
-          <span className="bg-blue-100 text-blue-700 dark:bg-blue-500/30 dark:text-blue-100 text-sm px-4 py-1.5 rounded-full border border-blue-200 dark:border-blue-400/20">
-            🎓 MERN Stack E-Learning Platform
-          </span>
-          <h1 className="text-4xl md:text-6xl font-extrabold leading-tight max-w-3xl text-slate-950 dark:text-white">
-            Learn New Skills,
-            <span className="block text-blue-600 dark:text-yellow-300"> Advance Your Career</span>
-          </h1>
-          <p className="text-slate-600 dark:text-blue-100 text-lg max-w-xl">
-            Access expert-led courses in web development, data science, design and more.
-            Learn at your own pace with video lessons and downloadable materials.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 mt-2">
-            <Link to="/courses"
-              className="bg-blue-600 hover:bg-blue-700 text-white force-white font-bold px-8 py-3 rounded-xl transition-colors shadow-lg">
-              Browse Courses
-            </Link>
-            {!isLoggedIn && (
-              <Link to="/register"
-                className="border-2 border-blue-600 text-blue-700 dark:border-white dark:text-white font-bold px-8 py-3 rounded-xl hover:bg-blue-600 hover:text-white dark:hover:bg-white dark:hover:text-blue-700 transition-colors">
-                Start Free Today
-              </Link>
-            )}
-          </div>
-
-          <div className="flex gap-10 mt-8 text-center">
-            {[
-              { value: '50+',  label: 'Courses'  },
-              { value: '1K+',  label: 'Students' },
-              { value: '20+',  label: 'Instructors' }
-            ].map(stat => (
-              <div key={stat.label}>
-                <div className="text-3xl font-extrabold text-slate-950 dark:text-white">{stat.value}</div>
-                <div className="text-slate-500 dark:text-blue-200 text-sm">{stat.label}</div>
-              </div>
-            ))}
-          </div>
+    <div className="bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-200">
+      <section className="relative overflow-hidden border-b border-[var(--border-light)] bg-[var(--bg-secondary)] transition-colors duration-200">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -right-40 -top-40 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl" />
+          <div className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-indigo-500/10 blur-3xl" />
         </div>
-      </section>
 
-      {/* Features */}
-      <section className="py-20 bg-white dark:bg-gray-950">
-        <div className="max-w-6xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center text-gray-900 dark:text-white mb-3">
-            Why Choose ELearnify?
-          </h2>
-          <p className="text-center text-gray-500 dark:text-gray-400 mb-12">
-            Everything you need to learn effectively in one place.
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {FEATURES.map(({ icon, title, desc }) => (
-              <div key={title} className="text-center p-6 rounded-xl bg-slate-50 border border-slate-200 dark:border-gray-800 dark:bg-gray-900 hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors">
-                <div className="text-4xl mb-4">{icon}</div>
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-2">{title}</h3>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">{desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+        <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-24">
+          <div className="mx-auto max-w-4xl text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45 }}
+            >
+              <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-[var(--border-light)] bg-[var(--surface-1)] px-4 py-2 text-sm font-medium text-[var(--text-secondary)] shadow-[var(--shadow-sm)]">
+                <Flame size={14} className="text-yellow-500" />
+                MERN Stack E-Learning Platform
+              </span>
+            </motion.div>
 
-      {/* Categories */}
-      <section className="py-20 bg-slate-50 dark:bg-gray-950">
-        <div className="max-w-6xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center text-gray-900 dark:text-white mb-12">
-            Explore Categories
-          </h2>
-          <div className="flex flex-wrap justify-center gap-3">
-            {CATEGORIES.map(cat => (
+            <motion.h1
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: 0.08 }}
+              className="text-4xl font-extrabold leading-tight tracking-tight text-[var(--text-primary)] sm:text-5xl lg:text-7xl"
+            >
+              Learn New Skills,
+              <span className="block bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                Advance Your Career
+              </span>
+            </motion.h1>
+
+            <motion.p
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: 0.16 }}
+              className="mx-auto mt-6 max-w-2xl text-base leading-8 text-[var(--text-secondary)] sm:text-lg"
+            >
+              Access expert-led courses in web development, data science, design and more. Learn at your own pace with video lessons and downloadable materials.
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: 0.24 }}
+              className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row"
+            >
               <Link
-                key={cat}
-                to={`/courses?category=${encodeURIComponent(cat)}`}
-                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-blue-400 hover:text-blue-600 text-gray-700 dark:text-gray-200 px-5 py-2.5 rounded-full shadow-sm transition-all text-sm font-medium">
-                {cat}
+                to="/courses"
+                className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-8 py-4 text-base font-bold text-white shadow-[var(--shadow-md)] transition-all hover:bg-blue-700 hover:shadow-[var(--shadow-lg)]"
+              >
+                Browse Courses
+                <ArrowRight size={18} />
               </Link>
+
+              {!isLoggedIn && (
+                <Link
+                  to="/register"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-[var(--border-light)] bg-[var(--surface-1)] px-8 py-4 text-base font-bold text-[var(--text-primary)] shadow-[var(--shadow-sm)] transition-all hover:bg-[var(--bg-hover)]"
+                >
+                  Start Free Today
+                </Link>
+              )}
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: 0.32 }}
+              className="mt-14 grid grid-cols-2 gap-4 sm:grid-cols-4"
+            >
+              {STATS.map(({ icon: Icon, value, label }) => (
+                <div
+                  key={label}
+                  className="rounded-2xl border border-[var(--border-light)] bg-[var(--surface-1)] p-5 text-center shadow-[var(--shadow-sm)]"
+                >
+                  <div className="mb-1 flex items-center justify-center gap-1.5 text-blue-600 dark:text-blue-400">
+                    <Icon size={16} />
+                    <span className="text-2xl font-extrabold text-[var(--text-primary)]">
+                      {value}
+                    </span>
+                  </div>
+                  <p className="text-sm text-[var(--text-secondary)]">{label}</p>
+                </div>
+              ))}
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-[var(--bg-primary)] py-20 transition-colors duration-200">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="mx-auto mb-14 max-w-2xl text-center">
+            <h2 className="mb-4 text-3xl font-bold text-[var(--text-primary)] md:text-4xl">
+              Why Choose ELearnify?
+            </h2>
+            <p className="text-lg text-[var(--text-secondary)]">
+              Everything you need to learn effectively, all in one place.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {FEATURES.map(({ icon: Icon, title, desc, color, bg }, i) => (
+              <motion.div
+                key={title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.08 }}
+                whileHover={{ y: -4 }}
+                className="rounded-2xl border border-[var(--border-light)] bg-[var(--surface-1)] p-6 shadow-[var(--shadow-sm)] transition-all duration-300 hover:shadow-[var(--shadow-md)]"
+              >
+                <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ${bg}`}>
+                  <Icon size={24} className={color} />
+                </div>
+                <h3 className="mb-2 text-base font-bold text-[var(--text-primary)]">
+                  {title}
+                </h3>
+                <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
+                  {desc}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-[var(--bg-secondary)] py-20 transition-colors duration-200">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="mb-12 text-center">
+            <h2 className="mb-4 text-3xl font-bold text-[var(--text-primary)] md:text-4xl">
+              Explore Categories
+            </h2>
+            <p className="text-[var(--text-secondary)]">
+              Find the perfect course for your learning goals
+            </p>
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-3">
+            {CATEGORIES.map((cat, i) => (
+              <motion.div
+                key={cat}
+                initial={{ opacity: 0, scale: 0.94 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.04 }}
+              >
+                <Link
+                  to={`/courses?category=${encodeURIComponent(cat)}`}
+                  className="inline-flex rounded-2xl border border-[var(--border-light)] bg-[var(--surface-1)] px-6 py-3 text-sm font-medium text-[var(--text-secondary)] shadow-[var(--shadow-sm)] transition-all hover:border-blue-400 hover:text-blue-600 hover:shadow-[var(--shadow-md)] dark:hover:text-blue-400"
+                >
+                  {cat}
+                </Link>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
       {!isLoggedIn && (
-        <section className="bg-blue-700 dark:bg-slate-950 text-white force-white py-16 text-center">
-          <div className="max-w-2xl mx-auto px-4">
-            <h2 className="text-3xl font-bold mb-4 text-white force-white">Ready to Start Learning?</h2>
-            <p className="text-blue-100 mb-8">
-              Join thousands of students already learning on ELearnify.
-            </p>
-            <Link to="/register"
-              className="bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold px-10 py-3 rounded-xl transition-colors shadow-lg">
-              Create Free Account
-            </Link>
+        <section className="bg-gradient-to-r from-blue-600 to-indigo-600 py-20 text-white">
+          <div className="mx-auto max-w-3xl px-4 text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="mb-4 text-3xl font-extrabold md:text-4xl">
+                Ready to Start Learning?
+              </h2>
+              <p className="mx-auto mb-8 max-w-xl text-lg text-blue-100">
+                Join thousands of students already advancing their careers on ELearnify.
+              </p>
+              <Link
+                to="/register"
+                className="inline-flex items-center gap-2 rounded-2xl bg-white px-10 py-4 font-bold text-blue-700 shadow-lg transition-colors hover:bg-blue-50"
+              >
+                Create Free Account
+                <ArrowRight size={18} />
+              </Link>
+            </motion.div>
           </div>
         </section>
       )}

@@ -1,101 +1,249 @@
 @import "tailwindcss";
 
-/*
-  IMPORTANT for Tailwind CSS v4:
-  This makes dark: classes depend on the .dark class on <html>, not the user's
-  Windows/browser dark preference. Without this line, light mode can still show
-  dark dashboard cards if the computer itself is in dark mode.
-*/
-@custom-variant dark (&:where(.dark, .dark *));
+/* ─────────────────────────────────────────────────────────────────────────────
+   PHASE G: GLOBAL THEME TOKENS
+   Use these variables across pages/components instead of hardcoded colors.
+   ───────────────────────────────────────────────────────────────────────── */
 
-/* Global ELearnify theme tokens */
 :root,
 .light {
-  --background: 210 40% 98%;
-  --foreground: 222 47% 11%;
-  --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
-  --primary: 221 83% 53%;
-  --primary-foreground: 210 40% 98%;
-  --muted: 210 40% 96%;
-  --muted-foreground: 215 16% 47%;
-  --border: 214 32% 91%;
-  --sidebar-width: 260px;
-  --sidebar-collapsed: 70px;
+  color-scheme: light;
+
+  /* Backgrounds */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --bg-hover: #f1f5f9;
+
+  /* Surfaces */
+  --surface-1: #ffffff;
+  --surface-2: #f8fafc;
+  --surface-3: #f1f5f9;
+  --surface-inverse: #0f172a;
+
+  /* Text */
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-inverse: #ffffff;
+
+  /* Borders */
+  --border-light: #e2e8f0;
+  --border-medium: #cbd5e1;
+  --border-strong: #94a3b8;
+  --border-focus: #3b82f6;
+
+  /* Brand */
+  --brand-primary: #2563eb;
+  --brand-hover: #1d4ed8;
+  --brand-light: #eff6ff;
+  --brand-soft: #dbeafe;
+  --brand-text: #1d4ed8;
+
+  /* Status */
+  --success-bg: #f0fdf4;
+  --success-text: #16a34a;
+  --success-border: #bbf7d0;
+  --error-bg: #fef2f2;
+  --error-text: #dc2626;
+  --error-border: #fecaca;
+  --warning-bg: #fffbeb;
+  --warning-text: #d97706;
+  --warning-border: #fde68a;
+
+  /* Public layout */
+  --navbar-bg: #ffffff;
+  --navbar-border: #e2e8f0;
+  --footer-bg: #ffffff;
+  --footer-border: #e2e8f0;
+
+  /* Dashboard layout */
+  --sidebar-bg: #ffffff;
+  --sidebar-border: #e2e8f0;
+  --sidebar-active: #eff6ff;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(15 23 42 / 0.06);
+  --shadow-md: 0 6px 16px -8px rgb(15 23 42 / 0.25);
+  --shadow-lg: 0 20px 45px -20px rgb(15 23 42 / 0.25);
+  --shadow-card: 0 12px 30px -18px rgb(15 23 42 / 0.35);
+
+  /* Radius */
+  --radius-card: 1rem;
+  --radius-button: 0.875rem;
 }
 
 .dark {
-  --background: 222 47% 8%;
-  --foreground: 210 40% 98%;
-  --card: 222 47% 11%;
-  --card-foreground: 210 40% 98%;
-  --primary: 217 91% 60%;
-  --primary-foreground: 222 47% 11%;
-  --muted: 217 33% 17%;
-  --muted-foreground: 215 20% 65%;
-  --border: 217 33% 20%;
+  color-scheme: dark;
+
+  /* Backgrounds */
+  --bg-primary: #020617;
+  --bg-secondary: #0f172a;
+  --bg-tertiary: #1e293b;
+  --bg-hover: #1e293b;
+
+  /* Surfaces */
+  --surface-1: #0f172a;
+  --surface-2: #111827;
+  --surface-3: #1e293b;
+  --surface-inverse: #ffffff;
+
+  /* Text */
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #64748b;
+  --text-inverse: #0f172a;
+
+  /* Borders */
+  --border-light: #1e293b;
+  --border-medium: #334155;
+  --border-strong: #475569;
+  --border-focus: #3b82f6;
+
+  /* Brand */
+  --brand-primary: #3b82f6;
+  --brand-hover: #60a5fa;
+  --brand-light: #1e3a5f;
+  --brand-soft: rgba(37, 99, 235, 0.18);
+  --brand-text: #93c5fd;
+
+  /* Status */
+  --success-bg: #052e16;
+  --success-text: #4ade80;
+  --success-border: #166534;
+  --error-bg: #450a0a;
+  --error-text: #f87171;
+  --error-border: #991b1b;
+  --warning-bg: #451a03;
+  --warning-text: #fbbf24;
+  --warning-border: #92400e;
+
+  /* Public layout */
+  --navbar-bg: #0f172a;
+  --navbar-border: #1e293b;
+  --footer-bg: #020617;
+  --footer-border: #1e293b;
+
+  /* Dashboard layout */
+  --sidebar-bg: #0f172a;
+  --sidebar-border: #1e293b;
+  --sidebar-active: rgba(37, 99, 235, 0.18);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.25);
+  --shadow-md: 0 6px 16px -8px rgb(0 0 0 / 0.6);
+  --shadow-lg: 0 20px 45px -20px rgb(0 0 0 / 0.7);
+  --shadow-card: 0 12px 30px -18px rgb(0 0 0 / 0.7);
 }
 
-html,
-body,
-#root {
-  min-height: 100%;
+* {
+  box-sizing: border-box;
+  border-color: var(--border-light);
 }
 
-html { color-scheme: light; }
-html.dark { color-scheme: dark; }
+html {
+  scroll-behavior: smooth;
+}
 
 body {
   min-height: 100vh;
   margin: 0;
-  background-color: hsl(var(--background));
-  color: hsl(var(--foreground));
-  transition: background-color 0.25s ease, color 0.25s ease;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: Inter, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Theme-aware utility support */
-.bg-background { background-color: hsl(var(--background)); }
-.text-foreground { color: hsl(var(--foreground)); }
-.bg-card { background-color: hsl(var(--card)); }
-.text-card-foreground { color: hsl(var(--card-foreground)); }
-.border-border { border-color: hsl(var(--border)); }
-.bg-muted { background-color: hsl(var(--muted)); }
-.text-muted-foreground { color: hsl(var(--muted-foreground)); }
-
-/* Keep common text utilities readable in dark mode */
-.dark .text-gray-900,
-.dark .text-gray-800 { color: hsl(var(--foreground)); }
-.dark .text-gray-700,
-.dark .text-gray-600,
-.dark .text-gray-500 { color: hsl(var(--muted-foreground)); }
-
-/* Emergency light-mode reset for old hardcoded dark panels */
-.light .bg-gray-950,
-.light .bg-slate-950,
-.light .bg-gray-900,
-.light .bg-slate-900 {
-  background-color: #ffffff;
+button,
+a,
+input,
+textarea,
+select {
+  font: inherit;
 }
 
-.light .bg-gray-800,
-.light .bg-slate-800 {
-  background-color: #f8fafc;
+input,
+textarea,
+select {
+  background-color: var(--surface-1);
+  color: var(--text-primary);
+  border-color: var(--border-light);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.2s ease, color 0.2s ease;
 }
 
-.light .border-gray-800,
-.light .border-gray-700 {
-  border-color: #e2e8f0;
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted);
 }
 
-/* Smooth scrollbar */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-.dark ::-webkit-scrollbar-thumb { background: #475569; }
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.12);
+}
 
-/* Remove default list bullets for lists used in the UI */
-ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Utility helpers */
+.bg-app { background-color: var(--bg-primary); }
+.bg-app-secondary { background-color: var(--bg-secondary); }
+.bg-surface { background-color: var(--surface-1); }
+.bg-surface-2 { background-color: var(--surface-2); }
+.text-app { color: var(--text-primary); }
+.text-app-muted { color: var(--text-secondary); }
+.border-app { border-color: var(--border-light); }
+.shadow-app-sm { box-shadow: var(--shadow-sm); }
+.shadow-app-lg { box-shadow: var(--shadow-lg); }
+
+.card {
+  background-color: var(--surface-1);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-sm);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+td {
+  color: var(--text-primary);
+}
+
+tr:hover {
+  background-color: var(--bg-hover);
+}
+
+hr {
+  border-color: var(--border-light);
 }
