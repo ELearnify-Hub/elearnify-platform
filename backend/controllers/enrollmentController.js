@@ -1,6 +1,7 @@
 // controllers/enrollmentController.js
 const Course = require('../models/Course');
 const User = require('../models/User');
+const { createNotification } = require('./notificationController');
 
 // ─── @route   POST /api/enrollments/:courseId ────────────────────────────────
 // @desc    Enroll current user in a course
@@ -53,6 +54,19 @@ const enrollInCourse = async (req, res) => {
     await Course.findByIdAndUpdate(courseId, {
       $addToSet: { enrolledStudents: userId }
     });
+
+    // Create enrollment notification
+    try {
+      await createNotification({
+        userId: userId,
+        type: 'enrollment',
+        title: 'Enrollment Confirmed!',
+        message: `You are now enrolled in "${course.title}"`,
+        link: `/courses/${courseId}`
+      });
+    } catch (notificationError) {
+      console.error('Enrollment notification error:', notificationError);
+    }
 
     res.status(200).json({
       success: true,
@@ -178,6 +192,5 @@ module.exports = {
   enrollInCourse,
   getMyEnrolledCourses,
   unenrollCourse,
-  // Backward-compatible alias in case older code imports this name
   unenrollFromCourse: unenrollCourse
 };

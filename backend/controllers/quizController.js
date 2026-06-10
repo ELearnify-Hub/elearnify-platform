@@ -1,8 +1,9 @@
 // controllers/quizController.js
-const Quiz        = require('../models/Quiz');
+const Quiz = require('../models/Quiz');
 const QuizAttempt = require('../models/QuizAttempt');
-const Course      = require('../models/Course');
+const Course = require('../models/Course');
 const { checkAndIssueCertificate } = require('./certificateController');
+const { createNotification } = require('./notificationController');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const normalizeModuleId = (moduleId) => {
@@ -19,6 +20,7 @@ const normalizeQuestions = (questions = []) => {
     if (correctIndex === undefined && q.correct !== undefined) {
       correctIndex = q.correct;
     }
+
     if (correctIndex === undefined && q.correctAnswer !== undefined) {
       correctIndex = q.correctAnswer;
     }
@@ -26,10 +28,11 @@ const normalizeQuestions = (questions = []) => {
     correctIndex = Number(correctIndex);
 
     return {
-      // Keep existing subdocument _id when editing, but do not require it for new questions
       ...(q._id ? { _id: q._id } : {}),
       text: String(q.text || '').trim(),
-      options: Array.isArray(q.options) ? q.options.map(opt => String(opt || '').trim()) : [],
+      options: Array.isArray(q.options)
+        ? q.options.map((opt) => String(opt || '').trim())
+        : [],
       correctIndex: Number.isNaN(correctIndex) ? 0 : correctIndex,
       explanation: q.explanation || '',
       points: q.points ? Number(q.points) : 1
@@ -44,14 +47,24 @@ const validateQuestions = (questions = []) => {
 
   for (let i = 0; i < questions.length; i++) {
     const q = questions[i];
-    if (!q.text?.trim()) return `Question ${i + 1} is missing text`;
+
+    if (!q.text?.trim()) {
+      return `Question ${i + 1} is missing text`;
+    }
+
     if (!Array.isArray(q.options) || q.options.length < 2) {
       return `Question ${i + 1} must have at least 2 options`;
     }
-    if (q.options.some(opt => !String(opt || '').trim())) {
+
+    if (q.options.some((opt) => !String(opt || '').trim())) {
       return `Question ${i + 1} has an empty option`;
     }
-    if (q.correctIndex === undefined || q.correctIndex < 0 || q.correctIndex >= q.options.length) {
+
+    if (
+      q.correctIndex === undefined ||
+      q.correctIndex < 0 ||
+      q.correctIndex >= q.options.length
+    ) {
       return `Question ${i + 1} has an invalid correct answer`;
     }
   }
@@ -69,14 +82,21 @@ const validateQuestions = (questions = []) => {
 const createQuiz = async (req, res) => {
   try {
     const {
-      title, description, courseId, moduleId,
-      questions, passingScore, timeLimit,
-      allowRetry, maxAttempts, showAnswers,
+      title,
+      description,
+      courseId,
+      moduleId,
+      questions,
+      passingScore,
+      timeLimit,
+      allowRetry,
+      maxAttempts,
+      showAnswers,
       shuffleQuestions
     } = req.body;
 
-    // Validate course exists
     const course = await Course.findById(courseId);
+
     if (!course) {
       return res.status(404).json({
         success: false,
@@ -86,23 +106,27 @@ const createQuiz = async (req, res) => {
 
     const cleanQuestions = normalizeQuestions(questions);
     const questionError = validateQuestions(cleanQuestions);
+
     if (questionError) {
-      return res.status(400).json({ success: false, message: questionError });
+      return res.status(400).json({
+        success: false,
+        message: questionError
+      });
     }
 
     const quiz = await Quiz.create({
       title,
-      description:      description    || '',
+      description: description || '',
       courseId,
-      moduleId:         normalizeModuleId(moduleId),
-      questions:        cleanQuestions,
-      passingScore:     passingScore   || 70,
-      timeLimit:        timeLimit      || 0,
-      allowRetry:       allowRetry     !== undefined ? allowRetry     : true,
-      maxAttempts:      maxAttempts    || 0,
-      showAnswers:      showAnswers    !== undefined ? showAnswers    : true,
+      moduleId: normalizeModuleId(moduleId),
+      questions: cleanQuestions,
+      passingScore: passingScore || 70,
+      timeLimit: timeLimit || 0,
+      allowRetry: allowRetry !== undefined ? allowRetry : true,
+      maxAttempts: maxAttempts || 0,
+      showAnswers: showAnswers !== undefined ? showAnswers : true,
       shuffleQuestions: shuffleQuestions !== undefined ? shuffleQuestions : false,
-      createdBy:        req.user._id
+      createdBy: req.user._id
     });
 
     res.status(201).json({
@@ -113,11 +137,20 @@ const createQuiz = async (req, res) => {
 
   } catch (error) {
     if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors).map(e => e.message);
-      return res.status(400).json({ success: false, message: messages.join(', ') });
+      const messages = Object.values(error.errors).map((e) => e.message);
+
+      return res.status(400).json({
+        success: false,
+        message: messages.join(', ')
+      });
     }
+
     console.error('Create quiz error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
   }
 };
 
@@ -128,8 +161,6 @@ const getQuizzesByCourse = async (req, res) => {
   try {
     const isAdmin = req.user?.role === 'admin';
 
-    // Admin needs correctIndex + explanation so the Edit Quiz form can load and save
-    // existing quizzes correctly. Students should not receive answers from this list.
     const query = Quiz.find({
       courseId: req.params.courseId,
       isActive: true
@@ -141,28 +172,33 @@ const getQuizzesByCourse = async (req, res) => {
 
     const quizzes = await query;
 
-    res.status(200).json({ success: true, quizzes });
+    res.status(200).json({
+      success: true,
+      quizzes
+    });
 
   } catch (error) {
     console.error('Get quizzes error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
   }
 };
 
 // ── @route  GET /api/quiz/:quizId ─────────────────────────────────────────────
-// @desc   Get a single quiz (for taking)
+// @desc   Get a single quiz
 // @access Enrolled Students / Admin
 const getQuizById = async (req, res) => {
   try {
     const isAdmin = req.user?.role === 'admin';
 
-    // Students don't see correct answers until after they submit
     const selectFields = isAdmin
-      ? ''  // admin sees everything
-      : '-questions.correctIndex -questions.explanation'; // students don't
+      ? ''
+      : '-questions.correctIndex -questions.explanation';
 
-    const quiz = await Quiz.findById(req.params.quizId)
-      .select(selectFields);
+    const quiz = await Quiz.findById(req.params.quizId).select(selectFields);
 
     if (!quiz || !quiz.isActive) {
       return res.status(404).json({
@@ -171,8 +207,8 @@ const getQuizById = async (req, res) => {
       });
     }
 
-    // Get student's previous attempts if logged in
     let attempts = [];
+
     if (req.user) {
       attempts = await QuizAttempt.find({
         quizId: req.params.quizId,
@@ -186,14 +222,18 @@ const getQuizById = async (req, res) => {
       attempts,
       totalAttempts: attempts.length,
       bestScore: attempts.length > 0
-        ? Math.max(...attempts.map(a => a.score))
+        ? Math.max(...attempts.map((a) => a.score))
         : null,
-      hasPassed: attempts.some(a => a.passed)
+      hasPassed: attempts.some((a) => a.passed)
     });
 
   } catch (error) {
     console.error('Get quiz error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
   }
 };
 
@@ -205,40 +245,70 @@ const updateQuiz = async (req, res) => {
     const quiz = await Quiz.findById(req.params.quizId);
 
     if (!quiz) {
-      return res.status(404).json({ success: false, message: 'Quiz not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'Quiz not found'
+      });
     }
 
     const {
-      title, description, courseId, moduleId,
-      questions, passingScore, timeLimit,
-      allowRetry, maxAttempts, showAnswers,
-      shuffleQuestions, isActive
+      title,
+      description,
+      courseId,
+      moduleId,
+      questions,
+      passingScore,
+      timeLimit,
+      allowRetry,
+      maxAttempts,
+      showAnswers,
+      shuffleQuestions,
+      isActive
     } = req.body;
 
     if (courseId) {
       const course = await Course.findById(courseId);
+
       if (!course) {
-        return res.status(404).json({ success: false, message: 'Course not found' });
+        return res.status(404).json({
+          success: false,
+          message: 'Course not found'
+        });
       }
+
       quiz.courseId = courseId;
     }
 
     if (title !== undefined) {
       if (!String(title).trim()) {
-        return res.status(400).json({ success: false, message: 'Quiz title is required' });
+        return res.status(400).json({
+          success: false,
+          message: 'Quiz title is required'
+        });
       }
+
       quiz.title = String(title).trim();
     }
 
-    if (description !== undefined) quiz.description = description || '';
-    if (moduleId !== undefined) quiz.moduleId = normalizeModuleId(moduleId);
+    if (description !== undefined) {
+      quiz.description = description || '';
+    }
+
+    if (moduleId !== undefined) {
+      quiz.moduleId = normalizeModuleId(moduleId);
+    }
 
     if (questions !== undefined) {
       const cleanQuestions = normalizeQuestions(questions);
       const questionError = validateQuestions(cleanQuestions);
+
       if (questionError) {
-        return res.status(400).json({ success: false, message: questionError });
+        return res.status(400).json({
+          success: false,
+          message: questionError
+        });
       }
+
       quiz.questions = cleanQuestions;
     }
 
@@ -252,18 +322,30 @@ const updateQuiz = async (req, res) => {
 
     await quiz.save();
 
-    res.status(200).json({ success: true, message: 'Quiz updated', quiz });
+    res.status(200).json({
+      success: true,
+      message: 'Quiz updated',
+      quiz
+    });
 
   } catch (error) {
     if (error.name === 'ValidationError' || error.name === 'CastError') {
       const message = error.name === 'ValidationError'
-        ? Object.values(error.errors).map(e => e.message).join(', ')
+        ? Object.values(error.errors).map((e) => e.message).join(', ')
         : `Invalid ${error.path || 'value'}: ${error.value}`;
-      return res.status(400).json({ success: false, message });
+
+      return res.status(400).json({
+        success: false,
+        message
+      });
     }
 
     console.error('Update quiz error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
   }
 };
 
@@ -273,19 +355,32 @@ const updateQuiz = async (req, res) => {
 const deleteQuiz = async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.quizId);
+
     if (!quiz) {
-      return res.status(404).json({ success: false, message: 'Quiz not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'Quiz not found'
+      });
     }
 
-    // Delete all attempt records
-    await QuizAttempt.deleteMany({ quizId: req.params.quizId });
+    await QuizAttempt.deleteMany({
+      quizId: req.params.quizId
+    });
+
     await Quiz.findByIdAndDelete(req.params.quizId);
 
-    res.status(200).json({ success: true, message: 'Quiz deleted' });
+    res.status(200).json({
+      success: true,
+      message: 'Quiz deleted'
+    });
 
   } catch (error) {
     console.error('Delete quiz error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
   }
 };
 
@@ -295,13 +390,13 @@ const deleteQuiz = async (req, res) => {
 
 // ── @route  POST /api/quiz/:quizId/submit ─────────────────────────────────────
 // @desc   Submit quiz answers and get results
-// @access Private (enrolled students)
+// @access Private
 const submitQuiz = async (req, res) => {
   try {
     const { answers, timeTaken } = req.body;
-    // answers = [{ questionId, selectedIndex }]
 
     const quiz = await Quiz.findById(req.params.quizId);
+
     if (!quiz || !quiz.isActive) {
       return res.status(404).json({
         success: false,
@@ -309,14 +404,13 @@ const submitQuiz = async (req, res) => {
       });
     }
 
-    // ── Check attempt limits ──────────────────────────────────────────────────
     const previousAttempts = await QuizAttempt.find({
       quizId: quiz._id,
       userId: req.user._id
     });
 
-    // Check if already passed
-    const alreadyPassed = previousAttempts.some(a => a.passed);
+    const alreadyPassed = previousAttempts.some((a) => a.passed);
+
     if (alreadyPassed) {
       return res.status(400).json({
         success: false,
@@ -324,7 +418,6 @@ const submitQuiz = async (req, res) => {
       });
     }
 
-    // Check max attempts
     if (!quiz.allowRetry && previousAttempts.length > 0) {
       return res.status(400).json({
         success: false,
@@ -339,21 +432,20 @@ const submitQuiz = async (req, res) => {
       });
     }
 
-    // ── Grade the quiz ────────────────────────────────────────────────────────
-    let correctCount  = 0;
-    let totalPoints   = 0;
-    let earnedPoints  = 0;
+    let correctCount = 0;
+    let totalPoints = 0;
+    let earnedPoints = 0;
     const gradedAnswers = [];
 
     quiz.questions.forEach((question) => {
       totalPoints += question.points;
 
-      // Find the student's answer for this question
       const studentAnswer = answers?.find(
-        a => a.questionId?.toString() === question._id.toString()
+        (a) => a.questionId?.toString() === question._id.toString()
       );
+
       const selectedIndex = studentAnswer?.selectedIndex ?? -1;
-      const isCorrect     = selectedIndex === question.correctIndex;
+      const isCorrect = selectedIndex === question.correctIndex;
 
       if (isCorrect) {
         correctCount++;
@@ -361,36 +453,48 @@ const submitQuiz = async (req, res) => {
       }
 
       gradedAnswers.push({
-        questionId:    question._id,
-        questionText:  question.text,
-        options:       question.options,
+        questionId: question._id,
+        questionText: question.text,
+        options: question.options,
         selectedIndex,
-        correctIndex:  question.correctIndex,
+        correctIndex: question.correctIndex,
         isCorrect,
-        explanation:   question.explanation,
-        points:        question.points
+        explanation: question.explanation,
+        points: question.points
       });
     });
 
-    // Calculate percentage score
-    const score  = totalPoints > 0
+    const score = totalPoints > 0
       ? Math.round((earnedPoints / totalPoints) * 100)
       : 0;
+
     const passed = score >= quiz.passingScore;
 
-    // ── Save the attempt ──────────────────────────────────────────────────────
     const attempt = await QuizAttempt.create({
-      quizId:        quiz._id,
-      userId:        req.user._id,
-      courseId:      quiz.courseId,
-      answers:       answers || [],
+      quizId: quiz._id,
+      userId: req.user._id,
+      courseId: quiz.courseId,
+      answers: answers || [],
       score,
       correctCount,
       passed,
       attemptNumber: previousAttempts.length + 1,
-      timeTaken:     timeTaken || 0,
-      completedAt:   new Date()
+      timeTaken: timeTaken || 0,
+      completedAt: new Date()
     });
+
+    // Create quiz result notification
+    try {
+      await createNotification({
+        userId: req.user._id,
+        type: 'quiz_result',
+        title: passed ? '🎉 Quiz Passed!' : '📝 Quiz Submitted',
+        message: `You scored ${score}% on "${quiz.title}"`,
+        link: `/quiz/${quiz._id}/results`
+      });
+    } catch (notificationError) {
+      console.error('Quiz notification error:', notificationError);
+    }
 
     const certificate = await checkAndIssueCertificate(
       req.user._id,
@@ -398,17 +502,15 @@ const submitQuiz = async (req, res) => {
       req.user.name
     );
 
-    // ── Build response ────────────────────────────────────────────────────────
     const result = {
       score,
       passed,
       correctCount,
-      totalQuestions:  quiz.questions.length,
-      passingScore:    quiz.passingScore,
-      attemptNumber:   attempt.attemptNumber,
-      timeTaken:       timeTaken || 0,
-      // Only show graded answers if showAnswers is true
-      gradedAnswers:   quiz.showAnswers ? gradedAnswers : [],
+      totalQuestions: quiz.questions.length,
+      passingScore: quiz.passingScore,
+      attemptNumber: attempt.attemptNumber,
+      timeTaken: timeTaken || 0,
+      gradedAnswers: quiz.showAnswers ? gradedAnswers : [],
       canRetry: quiz.allowRetry && !passed && (
         quiz.maxAttempts === 0 ||
         attempt.attemptNumber < quiz.maxAttempts
@@ -428,7 +530,11 @@ const submitQuiz = async (req, res) => {
 
   } catch (error) {
     console.error('Submit quiz error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
   }
 };
 
@@ -441,37 +547,46 @@ const getMyResults = async (req, res) => {
       quizId: req.params.quizId,
       userId: req.user._id
     })
-    .sort({ attemptNumber: 1 })
-    .populate('quizId', 'title passingScore');
+      .sort({ attemptNumber: 1 })
+      .populate('quizId', 'title passingScore');
 
     res.status(200).json({
       success: true,
       attempts,
       bestScore: attempts.length > 0
-        ? Math.max(...attempts.map(a => a.score))
+        ? Math.max(...attempts.map((a) => a.score))
         : 0,
-      hasPassed:    attempts.some(a => a.passed),
+      hasPassed: attempts.some((a) => a.passed),
       totalAttempts: attempts.length
     });
 
   } catch (error) {
     console.error('Get results error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
   }
 };
 
 // ── @route  GET /api/quiz/:quizId/admin-results ───────────────────────────────
-// @desc   Get all student results for a quiz (Admin)
+// @desc   Get all student results for a quiz
 // @access Admin
 const getAdminResults = async (req, res) => {
   try {
-    const attempts = await QuizAttempt.find({ quizId: req.params.quizId })
+    const attempts = await QuizAttempt.find({
+      quizId: req.params.quizId
+    })
       .populate('userId', 'name email')
       .sort({ completedAt: -1 });
 
-    const passCount = attempts.filter(a => a.passed).length;
-    const avgScore  = attempts.length > 0
-      ? Math.round(attempts.reduce((sum, a) => sum + a.score, 0) / attempts.length)
+    const passCount = attempts.filter((a) => a.passed).length;
+
+    const avgScore = attempts.length > 0
+      ? Math.round(
+          attempts.reduce((sum, a) => sum + a.score, 0) / attempts.length
+        )
       : 0;
 
     res.status(200).json({
@@ -480,8 +595,8 @@ const getAdminResults = async (req, res) => {
       stats: {
         totalAttempts: attempts.length,
         passCount,
-        failCount:  attempts.length - passCount,
-        passRate:   attempts.length > 0
+        failCount: attempts.length - passCount,
+        passRate: attempts.length > 0
           ? Math.round((passCount / attempts.length) * 100)
           : 0,
         avgScore
@@ -490,7 +605,11 @@ const getAdminResults = async (req, res) => {
 
   } catch (error) {
     console.error('Get admin results error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
   }
 };
 

@@ -213,4 +213,11 @@ export const reviewAPI = {
   delete:    (courseId)       => API.delete(`/reviews/${courseId}`)
 };
 
+export const notificationAPI = {
+  getAll:      ()   => API.get('/notifications'),
+  markAllRead: ()   => API.put('/notifications/read-all'),
+  markOneRead: (id) => API.put(`/notifications/${id}/read`),
+  clearAll:    ()   => API.delete('/notifications')
+};
+
 export default API;

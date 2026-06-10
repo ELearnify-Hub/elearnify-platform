@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -7,20 +8,25 @@ import CourseDetailPage from './pages/CourseDetailPage';
 import MyCoursesPage from './pages/MyCoursesPage';
 import AdminDashboard from './pages/AdminDashboard';
 import StudentDashboard from './pages/StudentDashboard';
+
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
+
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import QuizPage from './pages/QuizPage';
 import QuizResultPage from './pages/QuizResultPage';
 import CertificateVerifyPage from './pages/CertificateVerifyPage';
+
 import InstructorDashboard from './pages/InstructorDashboard';
 import InstructorCourseFormPage from './pages/InstructorCourseFormPage';
+
 import OAuthCallbackPage from './pages/OAuthCallbackPage';
 import SecuritySettingsPage from './pages/SecuritySettingsPage';
 import ProfilePage from './pages/ProfilePage';
 import SearchPage from './pages/SearchPage';
+import NotFoundPage from './pages/NotFoundPage';
 
 const DASHBOARD_PATHS = [
   '/dashboard',
@@ -45,17 +51,26 @@ const AppShell = () => {
 
       <main className="flex-grow bg-[var(--bg-primary)] transition-colors duration-200">
         <Routes>
+          {/* Public Routes */}
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/courses" element={<CoursesPage />} />
           <Route path="/courses/:id" element={<CourseDetailPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-          <Route path="/verify/:certificateId" element={<CertificateVerifyPage />} />
-          <Route path="/auth/callback" element={<OAuthCallbackPage />} />
           <Route path="/search" element={<SearchPage />} />
 
+          {/* Password / OAuth Routes */}
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+          <Route path="/auth/callback" element={<OAuthCallbackPage />} />
+
+          {/* Certificate Verification */}
+          <Route
+            path="/verify/:certificateId"
+            element={<CertificateVerifyPage />}
+          />
+
+          {/* Student Routes */}
           <Route
             path="/dashboard"
             element={
@@ -92,6 +107,7 @@ const AppShell = () => {
             }
           />
 
+          {/* Instructor Routes */}
           <Route
             path="/instructor"
             element={
@@ -110,6 +126,7 @@ const AppShell = () => {
             }
           />
 
+          {/* Admin Routes */}
           <Route
             path="/admin"
             element={
@@ -119,6 +136,7 @@ const AppShell = () => {
             }
           />
 
+          {/* Quiz Routes */}
           <Route
             path="/quiz/:quizId"
             element={
@@ -136,6 +154,9 @@ const AppShell = () => {
               </ProtectedRoute>
             }
           />
+
+          {/* 404 Route */}
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>
 

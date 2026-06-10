@@ -83,6 +83,8 @@ app.use('/api/instructor', require('./routes/instructorRoutes'));
 app.use('/api/2fa', require('./routes/twoFactorRoutes'));
 app.use('/api/reviews/:courseId', require('./routes/reviewRoutes'));
 
+app.use('/api/notifications', require('./routes/notificationRoutes'));
+
 // ─── Health Check Route ───────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
   res.json({
