@@ -6,7 +6,7 @@ import {
   LayoutDashboard, BookOpen, PlayCircle, User,
   Award, Settings, LogOut, ChevronLeft,
   ChevronRight, GraduationCap, Users, BarChart3,
-  PlusCircle
+  PlusCircle, Shield
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -16,7 +16,8 @@ const STUDENT_NAV = [
   { icon: BookOpen, label: 'All Courses', path: '/courses' },
   { icon: PlayCircle, label: 'My Learning', path: '/my-courses' },
   { icon: Award, label: 'Certificates', path: '/certificates' },
-  { icon: User, label: 'Profile', path: '/profile' }
+  { icon: User, label: 'Profile', path: '/profile' },
+  { icon: Shield, label: 'Security', path: '/security' }
 ];
 
 const INSTRUCTOR_NAV = [
@@ -25,7 +26,8 @@ const INSTRUCTOR_NAV = [
   { icon: PlusCircle, label: 'New Course', path: '/instructor/courses/new' },
   { icon: Users, label: 'My Students', path: '/instructor/students' },
   { icon: BarChart3, label: 'Analytics', path: '/instructor/analytics' },
-  { icon: User, label: 'Profile', path: '/instructor/profile' }
+  { icon: User, label: 'Profile', path: '/instructor/profile' },
+  { icon: Shield, label: 'Security', path: '/security' }
 ];
 
 const ADMIN_NAV = [
@@ -34,7 +36,8 @@ const ADMIN_NAV = [
   { icon: PlusCircle, label: 'Add Course', path: '/admin/courses/new' },
   { icon: Users, label: 'Students', path: '/admin/students' },
   { icon: BarChart3, label: 'Analytics', path: '/admin/analytics' },
-  { icon: Settings, label: 'Settings', path: '/admin/settings' }
+  { icon: Settings, label: 'Settings', path: '/admin/settings' },
+  { icon: Shield, label: 'Security', path: '/security' }
 ];
 
 const Sidebar = () => {

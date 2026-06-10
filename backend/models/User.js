@@ -29,7 +29,7 @@ const userSchema = new mongoose.Schema(
 
     password: {
       type: String,
-      // Remove 'required' — Google users have no password
+      // Remove required because Google users have no password
       minlength: [6, 'Password must be at least 6 characters'],
       select: false
     },
@@ -95,28 +95,55 @@ const userSchema = new mongoose.Schema(
       // Stores when the reset token expires
     },
 
-    // ── Google OAuth Fields ───────────────────────────────────────────────────────
+    // ── Google OAuth Fields ───────────────────────────────────────────────────
     googleId: {
-      type:    String,
+      type: String,
       default: null
       // Google's unique user ID
       // Used to find user on subsequent OAuth logins
     },
 
     authProvider: {
-      type:    String,
-      enum:    ['local', 'google'],
+      type: String,
+      enum: ['local', 'google'],
       default: 'local'
       // 'local'  = registered with email/password
       // 'google' = registered via Google OAuth
     },
 
     avatar: {
-      type:    String,
+      type: String,
       default: ''
       // Profile picture URL from Google
-    }
+    },
 
+    // ── Two-Factor Authentication Fields ──────────────────────────────────────
+    twoFactorSecret: {
+      type: String,
+      default: null,
+      select: false
+      // TOTP secret — never exposed in API responses
+      // select: false means it will not be included in queries by default
+    },
+
+    twoFactorEnabled: {
+      type: Boolean,
+      default: false
+      // Whether 2FA is currently active for this account
+    },
+
+    twoFactorVerified: {
+      type: Boolean,
+      default: false
+      // Whether user has completed the setup verification step
+    },
+
+    twoFactorBackupCodes: {
+      type: [String],
+      default: [],
+      select: false
+      // Array of bcrypt-hashed backup codes
+    }
   },
   {
     timestamps: true
@@ -127,14 +154,14 @@ const userSchema = new mongoose.Schema(
 
 userSchema.pre('save', async function (next) {
   // Skip hashing if:
-  // 1. Password wasn't modified
-  // 2. User has no password (Google OAuth user)
+  // 1. Password was not modified
+  // 2. User has no password, for example Google OAuth user
   if (!this.isModified('password') || !this.password) {
     return next();
   }
 
   try {
-    const salt   = await bcrypt.genSalt(10);
+    const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
     next();
   } catch (error) {

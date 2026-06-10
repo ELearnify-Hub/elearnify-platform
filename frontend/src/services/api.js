@@ -194,4 +194,13 @@ export const instructorAPI = {
   changeRole: (id, data) => API.put(`/instructor/${id}/role`, data)
 };
 
+export const twoFactorAPI = {
+  getStatus:            ()       => API.get('/2fa/status'),
+  setup:                ()       => API.post('/2fa/setup'),
+  verifySetup:          (data)   => API.post('/2fa/verify-setup',            data),
+  disable:              (data)   => API.delete('/2fa/disable',               { data }),
+  verifyLogin:          (data)   => API.post('/2fa/verify-login',            data),
+  regenerateBackupCodes:(data)   => API.post('/2fa/regenerate-backup-codes', data)
+};
+
 export default API;

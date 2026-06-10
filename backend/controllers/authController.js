@@ -1,6 +1,7 @@
 // controllers/authController.js
 // Contains the business logic for: Register, Login, Get Profile
-const crypto = require('crypto');  // Built into Node.js — no install needed
+
+const crypto = require('crypto');
 const {
   sendPasswordResetEmail,
   sendWelcomeEmail
@@ -10,26 +11,23 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
 // ─── Helper: Generate JWT Token ───────────────────────────────────────────────
-// We extract this into a helper so we don't repeat it in register and login
 
 const generateToken = (userId) => {
   return jwt.sign(
-    { id: userId },              // Payload: data encoded inside the token
-    process.env.JWT_SECRET,      // Secret key used to sign the token
-    { expiresIn: '7d' }          // Token expires in 7 days
+    { id: userId },
+    process.env.JWT_SECRET,
+    { expiresIn: '7d' }
   );
 };
 
 // ─── @route   POST /api/auth/register ────────────────────────────────────────
-// @desc    Register a new student account
-// @access  Public (no token required)
+// @desc    Register a new student/instructor account
+// @access  Public
 
 const register = async (req, res) => {
   try {
-    // Step 1: Extract data from request body
     const { name, email, password, role } = req.body;
 
-    // Step 2: Validate required fields
     if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
@@ -37,7 +35,6 @@ const register = async (req, res) => {
       });
     }
 
-    // Step 3: Check if user with this email already exists
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
@@ -47,29 +44,20 @@ const register = async (req, res) => {
       });
     }
 
-    // Step 4: Create the user
-    // Plain password is passed here.
-    // User.js pre-save middleware will hash it automatically.
     const user = await User.create({
       name,
       email,
       password,
-
-      // Students and instructors can self-register.
-      // Admin accounts can never be self-registered from the API.
       role: ['student', 'instructor'].includes(role) ? role : 'student'
     });
 
-    // Step 5: Generate JWT token for immediate login after registration
     const token = generateToken(user._id);
 
-    // Send welcome email without blocking the response
     sendWelcomeEmail({
       toEmail: user.email,
       userName: user.name
     }).catch(err => console.error('Welcome email error:', err.message));
 
-    // Step 6: Send response
     res.status(201).json({
       success: true,
       message: 'Account created successfully',
@@ -79,13 +67,14 @@ const register = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        avatar: user.avatar,
         isApproved: user.isApproved,
-        enrolledCourses: user.enrolledCourses
+        enrolledCourses: user.enrolledCourses,
+        twoFactorEnabled: user.twoFactorEnabled
       }
     });
 
   } catch (error) {
-    // Handle Mongoose validation errors nicely
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(e => e.message);
 
@@ -110,10 +99,8 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
   try {
-    // Step 1: Extract credentials
     const { email, password } = req.body;
 
-    // Step 2: Validate input
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -121,21 +108,15 @@ const login = async (req, res) => {
       });
     }
 
-    // Step 3: Find user by email
-    // We use .select('+password') because password has select:false in the schema
-    // This explicitly requests it for this one query
     const user = await User.findOne({ email }).select('+password');
 
     if (!user) {
-      // IMPORTANT: Use vague error messages for security
-      // Don't say "Email not found" — that lets hackers know which emails exist
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
       });
     }
 
-    // Step 4: Compare the entered password with the stored hash
     const isPasswordCorrect = await user.comparePassword(password);
 
     if (!isPasswordCorrect) {
@@ -145,7 +126,30 @@ const login = async (req, res) => {
       });
     }
 
-    // Step 5: Generate token and send response
+    // ── Check if 2FA is enabled ───────────────────────────────────────────────
+    if (user.twoFactorEnabled) {
+      // Do not issue full JWT yet.
+      // Issue a short-lived temp token used only for 2FA verification.
+      const tempToken = jwt.sign(
+        {
+          id: user._id,
+          purpose: '2fa_verification'
+        },
+        process.env.JWT_SECRET,
+        {
+          expiresIn: '10m'
+        }
+      );
+
+      return res.status(200).json({
+        success: true,
+        requires2FA: true,
+        tempToken,
+        message: 'Please enter your 2FA code to complete login'
+      });
+    }
+
+    // No 2FA — issue full JWT normally
     const token = generateToken(user._id);
 
     res.status(200).json({
@@ -157,13 +161,16 @@ const login = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        avatar: user.avatar,
         isApproved: user.isApproved,
-        enrolledCourses: user.enrolledCourses
+        enrolledCourses: user.enrolledCourses,
+        twoFactorEnabled: user.twoFactorEnabled
       }
     });
 
   } catch (error) {
     console.error('Login error:', error);
+
     res.status(500).json({
       success: false,
       message: 'Server error during login'
@@ -173,12 +180,10 @@ const login = async (req, res) => {
 
 // ─── @route   GET /api/auth/profile ──────────────────────────────────────────
 // @desc    Get the currently logged-in user's profile
-// @access  Private (requires valid JWT token)
+// @access  Private
 
 const getProfile = async (req, res) => {
   try {
-    // req.user is set by the protect middleware
-    // We populate enrolledCourses to get full course data, not just IDs
     const user = await User.findById(req.user._id)
       .populate('enrolledCourses', 'title thumbnail instructor category level');
 
@@ -196,6 +201,7 @@ const getProfile = async (req, res) => {
 
   } catch (error) {
     console.error('Get profile error:', error);
+
     res.status(500).json({
       success: false,
       message: 'Server error fetching profile'
@@ -204,13 +210,11 @@ const getProfile = async (req, res) => {
 };
 
 // ─── @route   GET /api/auth/students ─────────────────────────────────────────
-// @desc    Get all registered students (Admin only)
+// @desc    Get all registered students
 // @access  Private/Admin
 
 const getAllStudents = async (req, res) => {
   try {
-    // Find all users with role 'student'
-    // Sort by newest first (-1 = descending)
     const students = await User.find({ role: 'student' })
       .select('-password')
       .sort({ createdAt: -1 });
@@ -223,6 +227,7 @@ const getAllStudents = async (req, res) => {
 
   } catch (error) {
     console.error('Get students error:', error);
+
     res.status(500).json({
       success: false,
       message: 'Server error fetching students'
@@ -230,7 +235,7 @@ const getAllStudents = async (req, res) => {
   }
 };
 
-// ─── @route   POST /api/auth/forgot-password ──────────────────────────────────
+// ─── @route   POST /api/auth/forgot-password ─────────────────────────────────
 // @desc    Generate reset token and send email
 // @access  Public
 
@@ -245,9 +250,6 @@ const forgotPassword = async (req, res) => {
       });
     }
 
-    // Find user — but ALWAYS return same response whether found or not
-    // This prevents "email enumeration attacks"
-    // (attacker trying to find which emails are registered)
     const user = await User.findOne({ email: email.toLowerCase() });
 
     const genericResponse = {
@@ -256,50 +258,40 @@ const forgotPassword = async (req, res) => {
     };
 
     if (!user) {
-      // Don't reveal that email doesn't exist
       return res.status(200).json(genericResponse);
     }
 
-    // ── Generate secure random token ──────────────────────────────────────────
-    // crypto.randomBytes(32) = 32 random bytes = 256 bits of entropy
-    // Practically impossible to guess or brute force
     const resetToken = crypto.randomBytes(32).toString('hex');
 
-    // ── Hash before saving to database ────────────────────────────────────────
-    // If DB is ever breached, attacker gets only hashes — useless without plain token
     const hashedToken = crypto
       .createHash('sha256')
       .update(resetToken)
       .digest('hex');
 
-    // ── Save to user document ─────────────────────────────────────────────────
-    user.passwordResetToken   = hashedToken;
-    user.passwordResetExpires = Date.now() + 10 * 60 * 1000; // 10 minutes from now
-    await user.save({ validateBeforeSave: false });
-    // validateBeforeSave: false = skip field validation
-    // (we're only updating reset fields, not changing name/email/password)
+    user.passwordResetToken = hashedToken;
+    user.passwordResetExpires = Date.now() + 10 * 60 * 1000;
 
-    // ── Build reset URL ───────────────────────────────────────────────────────
-    // Plain token goes in URL — NOT the hashed version
-    // User clicks → we hash the URL token → compare with DB hash
+    await user.save({ validateBeforeSave: false });
+
     const resetURL = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
 
-    // ── Send email ────────────────────────────────────────────────────────────
     try {
       await sendPasswordResetEmail({
-        toEmail:  user.email,
+        toEmail: user.email,
         userName: user.name,
         resetURL
       });
+
       res.status(200).json(genericResponse);
 
     } catch (emailError) {
-      // Email failed — clean up the saved token so it can't be exploited
-      user.passwordResetToken   = null;
+      user.passwordResetToken = null;
       user.passwordResetExpires = null;
+
       await user.save({ validateBeforeSave: false });
 
       console.error('Reset email send error:', emailError.message);
+
       return res.status(500).json({
         success: false,
         message: 'Failed to send reset email. Please try again later.'
@@ -308,26 +300,28 @@ const forgotPassword = async (req, res) => {
 
   } catch (error) {
     console.error('Forgot password error:', error);
-    res.status(500).json({ success: false, message: 'Server error.' });
+
+    res.status(500).json({
+      success: false,
+      message: 'Server error.'
+    });
   }
 };
 
 // ─── @route   GET /api/auth/verify-reset-token/:token ────────────────────────
-// @desc    Check if token is valid BEFORE showing the reset form
+// @desc    Check if token is valid before showing reset form
 // @access  Public
 
 const verifyResetToken = async (req, res) => {
   try {
-    // Hash the token from URL and look it up in DB
     const hashedToken = crypto
       .createHash('sha256')
       .update(req.params.token)
       .digest('hex');
 
     const user = await User.findOne({
-      passwordResetToken:   hashedToken,
+      passwordResetToken: hashedToken,
       passwordResetExpires: { $gt: Date.now() }
-      // $gt: Date.now() → "expiry time is in the future" = not expired
     });
 
     if (!user) {
@@ -340,11 +334,16 @@ const verifyResetToken = async (req, res) => {
     res.status(200).json({
       success: true,
       message: 'Token is valid',
-      email:   user.email  // We show this on the reset page so user knows which account
+      email: user.email
     });
 
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error.' });
+    console.error('Verify reset token error:', error);
+
+    res.status(500).json({
+      success: false,
+      message: 'Server error.'
+    });
   }
 };
 
@@ -354,7 +353,7 @@ const verifyResetToken = async (req, res) => {
 
 const resetPassword = async (req, res) => {
   try {
-    const { token }    = req.params;
+    const { token } = req.params;
     const { password } = req.body;
 
     if (!password || password.length < 6) {
@@ -364,14 +363,13 @@ const resetPassword = async (req, res) => {
       });
     }
 
-    // ── Find user by hashed token that hasn't expired ─────────────────────────
     const hashedToken = crypto
       .createHash('sha256')
       .update(token)
       .digest('hex');
 
     const user = await User.findOne({
-      passwordResetToken:   hashedToken,
+      passwordResetToken: hashedToken,
       passwordResetExpires: { $gt: Date.now() }
     });
 
@@ -382,76 +380,73 @@ const resetPassword = async (req, res) => {
       });
     }
 
-    // ── Update password ───────────────────────────────────────────────────────
-    // The pre-save hook in User.js auto-hashes this
-    user.password             = password;
-    user.passwordResetToken   = null;  // Delete token — one-time use
+    user.password = password;
+    user.passwordResetToken = null;
     user.passwordResetExpires = null;
+
     await user.save();
 
-    // ── Auto-login after reset ────────────────────────────────────────────────
     const jwtToken = generateToken(user._id);
 
     res.status(200).json({
       success: true,
       message: 'Password reset successful!',
-      token:   jwtToken,
+      token: jwtToken,
       user: {
-        _id:   user._id,
-        name:  user.name,
+        _id: user._id,
+        name: user.name,
         email: user.email,
-        role:  user.role
+        role: user.role,
+        avatar: user.avatar,
+        isApproved: user.isApproved,
+        enrolledCourses: user.enrolledCourses,
+        twoFactorEnabled: user.twoFactorEnabled
       }
     });
 
   } catch (error) {
     console.error('Reset password error:', error);
-    res.status(500).json({ success: false, message: 'Server error.' });
+
+    res.status(500).json({
+      success: false,
+      message: 'Server error.'
+    });
   }
 };
 
-// ─── @route   GET /api/auth/google ───────────────────────────────────────────
-// @desc    Initiate Google OAuth flow
-// @access  Public
-// Note: This route is handled by Passport middleware in routes file
-// This controller handles the CALLBACK after Google redirects back
-
 // ─── @route   GET /api/auth/google/callback ──────────────────────────────────
-// @desc    Handle Google OAuth callback — issue JWT and redirect to frontend
-// @access  Public (called by Google)
+// @desc    Handle Google OAuth callback
+// @access  Public
+
 const googleCallback = async (req, res) => {
   try {
-    // At this point, Passport has already verified the Google token
-    // and attached the user to req.user via the strategy callback
-
     if (!req.user) {
       return res.redirect(
         `${process.env.FRONTEND_URL}/login?error=oauth_failed`
       );
     }
 
-    // Generate JWT for the authenticated user
     const token = generateToken(req.user._id);
 
-    // Build safe user object to pass to frontend
     const userData = encodeURIComponent(JSON.stringify({
-      _id:             req.user._id,
-      name:            req.user.name,
-      email:           req.user.email,
-      role:            req.user.role,
-      avatar:          req.user.avatar,
-      authProvider:    req.user.authProvider,
-      enrolledCourses: req.user.enrolledCourses || []
+      _id: req.user._id,
+      name: req.user.name,
+      email: req.user.email,
+      role: req.user.role,
+      avatar: req.user.avatar,
+      authProvider: req.user.authProvider,
+      isApproved: req.user.isApproved,
+      enrolledCourses: req.user.enrolledCourses || [],
+      twoFactorEnabled: req.user.twoFactorEnabled
     }));
 
-    // Redirect to frontend with token and user data in URL
-    // Frontend will extract these, store them, and clear the URL
     res.redirect(
       `${process.env.FRONTEND_URL}/auth/callback?token=${token}&user=${userData}`
     );
 
   } catch (error) {
     console.error('Google callback error:', error);
+
     res.redirect(
       `${process.env.FRONTEND_URL}/login?error=server_error`
     );
@@ -461,6 +456,7 @@ const googleCallback = async (req, res) => {
 // ─── @route   GET /api/auth/google/failure ───────────────────────────────────
 // @desc    Handle OAuth failure
 // @access  Public
+
 const googleFailure = (req, res) => {
   res.redirect(
     `${process.env.FRONTEND_URL}/login?error=google_auth_failed`
@@ -472,9 +468,9 @@ module.exports = {
   login,
   getProfile,
   getAllStudents,
-  forgotPassword,     
-  verifyResetToken,   
+  forgotPassword,
+  verifyResetToken,
   resetPassword,
-  googleCallback,   
-  googleFailure          
+  googleCallback,
+  googleFailure
 };

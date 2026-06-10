@@ -18,6 +18,7 @@ import CertificateVerifyPage from './pages/CertificateVerifyPage';
 import InstructorDashboard from './pages/InstructorDashboard';
 import InstructorCourseFormPage from './pages/InstructorCourseFormPage';
 import OAuthCallbackPage from './pages/OAuthCallbackPage';
+import SecuritySettingsPage from './pages/SecuritySettingsPage';
 
 const DASHBOARD_PATHS = [
   '/dashboard',
@@ -25,7 +26,8 @@ const DASHBOARD_PATHS = [
   '/my-courses',
   '/profile',
   '/quiz',
-  '/instructor'
+  '/instructor',
+  '/security'
 ];
 
 const AppShell = () => {
@@ -112,6 +114,16 @@ const AppShell = () => {
               </ProtectedRoute>
             }
           />
+
+          <Route
+            path="/security"
+            element={
+              <ProtectedRoute>
+                <SecuritySettingsPage />
+              </ProtectedRoute>
+            }
+          />
+
         </Routes>
       </main>
 

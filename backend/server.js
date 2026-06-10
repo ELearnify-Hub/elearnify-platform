@@ -80,6 +80,8 @@ app.use('/api/quiz', require('./routes/quizRoutes'));
 app.use('/api/certificates', require('./routes/certificateRoutes'));
 app.use('/api/instructor', require('./routes/instructorRoutes'));
 
+app.use('/api/2fa', require('./routes/twoFactorRoutes'));
+
 // ─── Health Check Route ───────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
   res.json({
