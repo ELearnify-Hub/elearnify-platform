@@ -27,6 +27,8 @@ import SecuritySettingsPage from './pages/SecuritySettingsPage';
 import ProfilePage from './pages/ProfilePage';
 import SearchPage from './pages/SearchPage';
 import NotFoundPage from './pages/NotFoundPage';
+import AIAssistantPage from './pages/AIAssistantPage';
+import AIAssistantWidget from './components/AIAssistantWidget';
 
 const DASHBOARD_PATHS = [
   '/dashboard',
@@ -35,7 +37,8 @@ const DASHBOARD_PATHS = [
   '/profile',
   '/quiz',
   '/instructor',
-  '/security'
+  '/security',
+  '/ai-assistant'
 ];
 
 const AppShell = () => {
@@ -155,10 +158,23 @@ const AppShell = () => {
             }
           />
 
+
+          {/* AI Assistant */}
+          <Route
+            path="/ai-assistant"
+            element={
+              <ProtectedRoute>
+                <AIAssistantPage />
+              </ProtectedRoute>
+            }
+          />
+
           {/* 404 Route */}
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>
+
+      <AIAssistantWidget />
 
       {!isDashboard && <Footer />}
     </div>

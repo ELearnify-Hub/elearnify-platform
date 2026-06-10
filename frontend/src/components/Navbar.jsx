@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GraduationCap, Menu, X, Search } from 'lucide-react';
+import { GraduationCap, Menu, X, Search, Bot } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ThemeToggle from './ThemeToggle';
 import { SERVER_URL } from '../services/api';
@@ -93,6 +93,16 @@ const Navbar = () => {
                 Admin
               </Link>
             )}
+
+            {isLoggedIn && (
+              <Link to="/ai-assistant" className={navLinkClass('/ai-assistant')}>
+                <span className="inline-flex items-center gap-1.5">
+                  <Bot size={15} />
+                  AI Assistant
+                </span>
+              </Link>
+            )}
+
           </div>
 
           {/* Desktop right side */}
@@ -251,6 +261,17 @@ const Navbar = () => {
                     Admin
                   </Link>
                 )}
+
+                {isLoggedIn && (
+                  <Link
+                    to="/ai-assistant"
+                    onClick={() => setMenuOpen(false)}
+                    className={navLinkClass('/ai-assistant')}
+                  >
+                    AI Assistant
+                  </Link>
+                )}
+
 
                 <div className="border-t border-[var(--border-light)] pt-3">
                   {!isLoggedIn ? (

@@ -220,4 +220,12 @@ export const notificationAPI = {
   clearAll:    ()   => API.delete('/notifications')
 };
 
+
+export const aiAPI = {
+  ask: (data) => API.post('/ai/ask', data),
+  recommendations: () => API.get('/ai/recommendations'),
+  history: () => API.get('/ai/history'),
+  quizIdeas: (data) => API.post('/ai/quiz-ideas', data)
+};
+
 export default API;

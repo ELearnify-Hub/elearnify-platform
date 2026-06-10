@@ -85,6 +85,9 @@ app.use('/api/reviews/:courseId', require('./routes/reviewRoutes'));
 
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 
+// AI Assistant Routes
+app.use('/api/ai', require('./routes/aiRoutes'));
+
 // ─── Health Check Route ───────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
   res.json({
