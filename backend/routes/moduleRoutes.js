@@ -16,7 +16,7 @@ const {
   markLessonComplete
 } = require('../controllers/moduleController');
 
-const { protect, adminOnly } = require('../middleware/auth');
+const { protect, instructorOrAdmin } = require('../middleware/auth');
 const { uploadLesson } = require('../middleware/upload');
 
 // ── Module Routes ─────────────────────────────────────────────────────────────
@@ -30,21 +30,21 @@ router.get(
 router.post(
   '/',
   protect,
-  adminOnly,
+  instructorOrAdmin,
   addModule
 );
 
 router.put(
   '/:moduleId',
   protect,
-  adminOnly,
+  instructorOrAdmin,
   updateModule
 );
 
 router.delete(
   '/:moduleId',
   protect,
-  adminOnly,
+  instructorOrAdmin,
   deleteModule
 );
 
@@ -53,7 +53,7 @@ router.delete(
 router.post(
   '/:moduleId/lessons',
   protect,
-  adminOnly,
+  instructorOrAdmin,
   uploadLesson.single('file'),
   addLesson
 );
@@ -61,7 +61,7 @@ router.post(
 router.put(
   '/:moduleId/lessons/:lessonId',
   protect,
-  adminOnly,
+  instructorOrAdmin,
   uploadLesson.single('file'),
   updateLesson
 );
@@ -69,7 +69,7 @@ router.put(
 router.delete(
   '/:moduleId/lessons/:lessonId',
   protect,
-  adminOnly,
+  instructorOrAdmin,
   deleteLesson
 );
 

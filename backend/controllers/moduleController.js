@@ -17,6 +17,25 @@ const deleteFile = (filePath) => {
   }
 };
 
+// ── Helper: course management guard ──────────────────────────────────────────
+// Admins can manage any course. Instructors can manage only courses they created.
+const canManageCourse = (course, user) => {
+  if (!user) return false;
+  if (user.role === 'admin') return true;
+  return course.createdBy?.toString() === user._id.toString();
+};
+
+const ensureCanManageCourse = (course, user, res) => {
+  if (canManageCourse(course, user)) return true;
+
+  res.status(403).json({
+    success: false,
+    message: 'You can only manage curriculum for your own courses'
+  });
+
+  return false;
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 //  MODULE OPERATIONS
 // ─────────────────────────────────────────────────────────────────────────────
@@ -30,6 +49,8 @@ const addModule = async (req, res) => {
     if (!course) {
       return res.status(404).json({ success: false, message: 'Course not found' });
     }
+
+    if (!ensureCanManageCourse(course, req.user, res)) return;
 
     const { title, description } = req.body;
     if (!title) {
@@ -69,6 +90,8 @@ const updateModule = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Course not found' });
     }
 
+    if (!ensureCanManageCourse(course, req.user, res)) return;
+
     // .id() is a Mongoose subdocument helper — finds by _id in array
     const module = course.modules.id(req.params.moduleId);
     if (!module) {
@@ -101,6 +124,8 @@ const deleteModule = async (req, res) => {
     if (!course) {
       return res.status(404).json({ success: false, message: 'Course not found' });
     }
+
+    if (!ensureCanManageCourse(course, req.user, res)) return;
 
     const module = course.modules.id(req.params.moduleId);
     if (!module) {
@@ -140,6 +165,8 @@ const addLesson = async (req, res) => {
     if (!course) {
       return res.status(404).json({ success: false, message: 'Course not found' });
     }
+
+    if (!ensureCanManageCourse(course, req.user, res)) return;
 
     const module = course.modules.id(req.params.moduleId);
     if (!module) {
@@ -191,6 +218,8 @@ const updateLesson = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Course not found' });
     }
 
+    if (!ensureCanManageCourse(course, req.user, res)) return;
+
     const module = course.modules.id(req.params.moduleId);
     if (!module) {
       return res.status(404).json({ success: false, message: 'Module not found' });
@@ -240,6 +269,8 @@ const deleteLesson = async (req, res) => {
     if (!course) {
       return res.status(404).json({ success: false, message: 'Course not found' });
     }
+
+    if (!ensureCanManageCourse(course, req.user, res)) return;
 
     const module = course.modules.id(req.params.moduleId);
     if (!module) {

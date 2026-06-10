@@ -78,15 +78,15 @@ export const AuthProvider = ({ children }) => {
       {/* Don't render children until we've checked localStorage */}
       {/* This prevents a flash of "logged out" UI on refresh */}
       {loading ? (
-        <div className="flex items-center justify-center min-h-screen bg-white">
-          <div className="text-center">
-            <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
-              <svg className="animate-spin h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <div className="flex min-h-screen items-center justify-center bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-200">
+          <div className="rounded-3xl border border-[var(--border-light)] bg-[var(--surface-1)] px-8 py-7 text-center shadow-[var(--shadow-lg)]">
+            <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 dark:bg-blue-900/30">
+              <svg className="h-6 w-6 animate-spin text-blue-600 dark:text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
             </div>
-            <p className="text-gray-600">Loading...</p>
+            <p className="text-sm font-medium text-[var(--text-secondary)]">Preparing your learning space...</p>
           </div>
         </div>
       ) : (

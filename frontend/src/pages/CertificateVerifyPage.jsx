@@ -25,7 +25,7 @@ const CertificateVerifyPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)] text-[var(--text-primary)] px-4">
         Verifying certificate...
       </div>
     );
@@ -33,31 +33,31 @@ const CertificateVerifyPage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-center">
-        <div className="p-8 rounded-2xl border bg-white dark:bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center text-center bg-[var(--bg-primary)] px-4">
+        <div className="p-8 rounded-3xl border border-[var(--border-light)] bg-[var(--surface-1)] shadow-[var(--shadow-lg)]">
           <h1 className="text-2xl font-bold text-red-600">
             Invalid Certificate
           </h1>
-          <p className="mt-2 text-gray-500">{error}</p>
+          <p className="mt-2 text-[var(--text-secondary)]">{error}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-background">
-      <div className="max-w-2xl w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-3xl p-8 text-center shadow-xl">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-[var(--bg-primary)] text-[var(--text-primary)] page-enter-soft">
+      <div className="max-w-2xl w-full bg-[var(--surface-1)] border border-[var(--border-light)] rounded-3xl p-8 text-center shadow-[var(--shadow-lg)]">
         <div className="text-5xl mb-4">✅</div>
 
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-3xl font-bold text-[var(--text-primary)]">
           Certificate Verified
         </h1>
 
-        <p className="mt-4 text-gray-500 dark:text-gray-400">
+        <p className="mt-4 text-[var(--text-secondary)]">
           This certificate is valid and was issued by ELearnify.
         </p>
 
-        <div className="mt-8 space-y-3 text-left bg-gray-50 dark:bg-gray-800 rounded-2xl p-5">
+        <div className="mt-8 space-y-3 text-left bg-[var(--bg-secondary)] border border-[var(--border-light)] rounded-2xl p-5 text-[var(--text-secondary)]">
           <p>
             <strong>Student:</strong> {certificate.studentName}
           </p>
