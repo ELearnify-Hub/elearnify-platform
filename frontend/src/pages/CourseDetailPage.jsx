@@ -1,41 +1,42 @@
 // pages/CourseDetailPage.jsx — Redesigned with module/lesson sidebar
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { motion, AnimatePresence }     from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   PlayCircle, FileText, ChevronDown, ChevronRight,
   Lock, CheckCircle, Clock, Users, BookOpen,
   Download, Eye, ArrowRight
 } from 'lucide-react';
 import { courseAPI, enrollmentAPI, moduleAPI, quizAPI, certificateAPI } from '../services/api';
-import { useAuth }     from '../context/AuthContext';
-import { SERVER_URL }  from '../services/api';
-import Loader          from '../components/Loader';
+import { useAuth } from '../context/AuthContext';
+import { SERVER_URL } from '../services/api';
+import Loader from '../components/Loader';
+import CourseReviews from '../components/CourseReviews';
 
 // ── Lesson icon by type ───────────────────────────────────────────────────────
 const LessonIcon = ({ type, size = 16 }) => {
-  if (type === 'pdf')  return <FileText size={size} className="text-red-500"  />;
-  if (type === 'text') return <FileText size={size} className="text-green-500"/>;
+  if (type === 'pdf') return <FileText size={size} className="text-red-500" />;
+  if (type === 'text') return <FileText size={size} className="text-green-500" />;
   return <PlayCircle size={size} className="text-blue-500" />;
 };
 
 const CourseDetailPage = () => {
-  const { id }      = useParams();
-  const navigate    = useNavigate();
+  const { id } = useParams();
+  const navigate = useNavigate();
   const { isLoggedIn, isAdmin, user } = useAuth();
-  const videoRef    = useRef(null);
+  const videoRef = useRef(null);
 
-  const [course,       setCourse]       = useState(null);
-  const [modules,      setModules]      = useState([]);
-  const [loading,      setLoading]      = useState(true);
-  const [error,        setError]        = useState('');
-  const [enrolled,     setEnrolled]     = useState(false);
-  const [enrolling,    setEnrolling]    = useState(false);
+  const [course, setCourse] = useState(null);
+  const [modules, setModules] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [enrolled, setEnrolled] = useState(false);
+  const [enrolling, setEnrolling] = useState(false);
   const [activeLesson, setActiveLesson] = useState(null);
-  const [completed,    setCompleted]    = useState(new Set());
-  const [expandedMods,  setExpandedMods]  = useState(new Set());
+  const [completed, setCompleted] = useState(new Set());
+  const [expandedMods, setExpandedMods] = useState(new Set());
   const [moduleQuizzes, setModuleQuizzes] = useState({});
-  const [message,       setMessage]       = useState('');
+  const [message, setMessage] = useState('');
   const [certificate, setCertificate] = useState(null);
 
   // ── Fetch course + modules ────────────────────────────────────────────────
@@ -64,6 +65,7 @@ const CourseDetailPage = () => {
         }
 
         let mods = [];
+
         try {
           const modRes = await moduleAPI.getModules(id);
           mods = modRes.data.modules || [];
@@ -72,6 +74,7 @@ const CourseDetailPage = () => {
         }
 
         if (!mounted) return;
+
         setModules(mods);
         setExpandedMods(new Set(mods.map(m => m._id)));
 
@@ -87,9 +90,11 @@ const CourseDetailPage = () => {
         try {
           const quizRes = await quizAPI.getByCourse(id);
           const quizMap = {};
+
           quizRes.data.quizzes?.forEach(quiz => {
             if (quiz.moduleId) quizMap[quiz.moduleId.toString()] = quiz;
           });
+
           if (mounted) setModuleQuizzes(quizMap);
         } catch {
           if (mounted) setModuleQuizzes({});
@@ -115,7 +120,7 @@ const CourseDetailPage = () => {
       setCertificate(null);
     }
   }, [id, isLoggedIn]);
-  
+
   // ── Toggle module expand ──────────────────────────────────────────────────
   const toggleModule = (moduleId) => {
     setExpandedMods(prev => {
@@ -128,19 +133,22 @@ const CourseDetailPage = () => {
   // ── Handle lesson click ───────────────────────────────────────────────────
   const handleLessonClick = (lesson, moduleId) => {
     const canAccess = enrolled || isAdmin || lesson.isFreePreview;
+
     if (!canAccess) {
       setMessage('Enroll in this course to access this lesson.');
       return;
     }
+
     setActiveLesson({ lesson, moduleId });
     setMessage('');
-    // Scroll to top on mobile
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // ── Mark lesson complete ──────────────────────────────────────────────────
   const handleMarkComplete = async (lessonId, moduleId) => {
     if (!enrolled) return;
+
     try {
       const { data } = await moduleAPI.markComplete(id, lessonId, moduleId);
       setCompleted(prev => new Set([...prev, lessonId]));
@@ -158,7 +166,7 @@ const CourseDetailPage = () => {
     try {
       const { data } = await certificateAPI.getMyForCourse(id);
       setCertificate(data.certificate);
-    } catch (error) {
+    } catch {
       setCertificate(null);
     }
   };
@@ -168,7 +176,7 @@ const CourseDetailPage = () => {
       const response = await certificateAPI.downloadFile(certificate.certificateId);
 
       const blob = new Blob([response.data], {
-      type: 'application/pdf'
+        type: 'application/pdf'
       });
 
       const url = window.URL.createObjectURL(blob);
@@ -179,22 +187,27 @@ const CourseDetailPage = () => {
       link.click();
 
       window.URL.revokeObjectURL(url);
-
-    } catch (error) {
+    } catch {
       alert('Failed to download certificate');
     }
   };
 
   // ── Enroll ────────────────────────────────────────────────────────────────
   const handleEnroll = async () => {
-    if (!isLoggedIn) { navigate('/login'); return; }
+    if (!isLoggedIn) {
+      navigate('/login');
+      return;
+    }
+
     setEnrolling(true);
+
     try {
       const { data } = await enrollmentAPI.enroll(id);
       console.log('Enrollment response:', data);
+
       setEnrolled(true);
       setMessage(data.message);
-      // Navigate to dashboard with refresh signal
+
       setTimeout(() => {
         navigate('/dashboard', { state: { refresh: true } });
       }, 1000);
@@ -208,10 +221,10 @@ const CourseDetailPage = () => {
 
   // ── PDF Download ──────────────────────────────────────────────────────────
   const handleDownload = (filePath, title) => {
-    const link    = document.createElement('a');
-    link.href     = `${SERVER_URL}/${filePath}`;
+    const link = document.createElement('a');
+    link.href = `${SERVER_URL}/${filePath}`;
     link.download = title;
-    link.target   = '_blank';
+    link.target = '_blank';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -219,22 +232,27 @@ const CourseDetailPage = () => {
 
   // ── Progress calc ─────────────────────────────────────────────────────────
   const totalLessons = modules.reduce(
-    (sum, m) => sum + (m.lessons?.length || 0), 0
+    (sum, m) => sum + (m.lessons?.length || 0),
+    0
   );
+
   const progressPct = totalLessons > 0
     ? Math.round((completed.size / totalLessons) * 100)
     : 0;
 
   if (loading) return <Loader text="Loading course..." />;
-  if (error)   return (
-    <div className="text-center py-20 text-red-500">
-      <div className="text-5xl mb-4">😕</div>
-      <p>{error}</p>
-    </div>
-  );
+
+  if (error) {
+    return (
+      <div className="text-center py-20 text-red-500">
+        <div className="text-5xl mb-4">😕</div>
+        <p>{error}</p>
+      </div>
+    );
+  }
 
   const canAccessContent = enrolled || isAdmin;
-  const hasModules       = modules.length > 0;
+  const hasModules = modules.length > 0;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -247,38 +265,37 @@ const CourseDetailPage = () => {
             {/* Course Header */}
             <motion.div
               initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0  }}
-              className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm
-                border border-gray-100 dark:border-gray-800">
-
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800"
+            >
               <div className="flex flex-wrap gap-2 mb-3">
-                <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-700
-                  dark:text-blue-400 text-xs px-3 py-1 rounded-full font-medium">
+                <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs px-3 py-1 rounded-full font-medium">
                   {course.category}
                 </span>
-                <span className="bg-gray-100 dark:bg-gray-800 text-gray-600
-                  dark:text-gray-400 text-xs px-3 py-1 rounded-full">
+
+                <span className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs px-3 py-1 rounded-full">
                   {course.level}
                 </span>
               </div>
 
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white
-                mb-3">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
                 {course.title}
               </h1>
-              <p className="text-gray-600 dark:text-gray-400 text-sm
-                leading-relaxed mb-4">
+
+              <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-4">
                 {course.description}
               </p>
 
-              <div className="flex flex-wrap gap-4 text-sm text-gray-500
-                dark:text-gray-400">
+              <div className="flex flex-wrap gap-4 text-sm text-gray-500 dark:text-gray-400">
                 <span>👨‍🏫 {course.instructor}</span>
+
                 {course.duration && <span>⏱ {course.duration}</span>}
+
                 <span className="flex items-center gap-1">
                   <Users size={14} />
                   {course.enrolledStudents?.length || 0} students
                 </span>
+
                 <span className="flex items-center gap-1">
                   <BookOpen size={14} />
                   {totalLessons} lessons
@@ -299,8 +316,8 @@ const CourseDetailPage = () => {
                 <button
                   onClick={downloadCertificate}
                   className="mt-4 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-sm font-medium"
-                > 
-                Download Certificate
+                >
+                  Download Certificate
                 </button>
               </div>
             )}
@@ -311,18 +328,18 @@ const CourseDetailPage = () => {
                 key={activeLesson.lesson._id}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden
-                  shadow-sm border border-gray-100 dark:border-gray-800">
-
+                className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800"
+              >
                 {/* Lesson header */}
-                <div className="flex items-center justify-between p-4
-                  bg-gray-800 dark:bg-gray-950">
+                <div className="flex items-center justify-between p-4 bg-gray-800 dark:bg-gray-950">
                   <div className="flex items-center gap-2">
                     <LessonIcon type={activeLesson.lesson.type} size={18} />
+
                     <h2 className="text-white font-semibold text-sm">
                       {activeLesson.lesson.title}
                     </h2>
                   </div>
+
                   {activeLesson.lesson.duration && (
                     <span className="text-gray-400 text-xs flex items-center gap-1">
                       <Clock size={12} />
@@ -340,10 +357,13 @@ const CourseDetailPage = () => {
                       controls
                       className="w-full bg-black"
                       style={{ maxHeight: '420px' }}
-                      onEnded={() => handleMarkComplete(
-                        activeLesson.lesson._id,
-                        activeLesson.moduleId
-                      )}>
+                      onEnded={() =>
+                        handleMarkComplete(
+                          activeLesson.lesson._id,
+                          activeLesson.moduleId
+                        )
+                      }
+                    >
                       <source
                         src={`${SERVER_URL}/${activeLesson.lesson.filePath}`}
                         type="video/mp4"
@@ -354,55 +374,55 @@ const CourseDetailPage = () => {
 
                 {activeLesson.lesson.type === 'pdf' && activeLesson.lesson.filePath && (
                   <div className="p-6 text-center">
-                    <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20
-                      rounded-2xl flex items-center justify-center mx-auto mb-4">
-                      <FileText size={28} className="text-red-600
-                        dark:text-red-400" />
+                    <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                      <FileText size={28} className="text-red-600 dark:text-red-400" />
                     </div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white
-                      mb-2">
+
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
                       {activeLesson.lesson.title}
                     </h3>
+
                     <button
-                      onClick={() => handleDownload(
-                        activeLesson.lesson.filePath,
-                        activeLesson.lesson.title
-                      )}
-                      className="inline-flex items-center gap-2 bg-blue-600
-                        hover:bg-blue-700 text-white font-medium px-6 py-3
-                        rounded-xl transition-colors text-sm">
-                      <Download size={16} /> Download PDF
+                      onClick={() =>
+                        handleDownload(
+                          activeLesson.lesson.filePath,
+                          activeLesson.lesson.title
+                        )
+                      }
+                      className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-3 rounded-xl transition-colors text-sm"
+                    >
+                      <Download size={16} />
+                      Download PDF
                     </button>
                   </div>
                 )}
 
                 {activeLesson.lesson.type === 'text' && (
-                  <div className="p-6 prose dark:prose-invert max-w-none
-                    text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
+                  <div className="p-6 prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
                     {activeLesson.lesson.content || 'No content available.'}
                   </div>
                 )}
 
                 {/* Mark complete button */}
                 {canAccessContent && (
-                  <div className="p-4 border-t border-gray-100 dark:border-gray-800
-                    flex justify-end">
+                  <div className="p-4 border-t border-gray-100 dark:border-gray-800 flex justify-end">
                     <button
-                      onClick={() => handleMarkComplete(
-                        activeLesson.lesson._id,
-                        activeLesson.moduleId
-                      )}
-                      className={`flex items-center gap-2 text-sm font-medium
-                        px-4 py-2 rounded-xl transition-colors
-                        ${completed.has(activeLesson.lesson._id)
+                      onClick={() =>
+                        handleMarkComplete(
+                          activeLesson.lesson._id,
+                          activeLesson.moduleId
+                        )
+                      }
+                      className={`flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl transition-colors ${
+                        completed.has(activeLesson.lesson._id)
                           ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400'
                           : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-green-100 dark:hover:bg-green-900/20 hover:text-green-700'
-                        }`}>
+                      }`}
+                    >
                       <CheckCircle size={16} />
                       {completed.has(activeLesson.lesson._id)
                         ? 'Completed!'
-                        : 'Mark as Complete'
-                      }
+                        : 'Mark as Complete'}
                     </button>
                   </div>
                 )}
@@ -411,20 +431,18 @@ const CourseDetailPage = () => {
 
             {/* ── Progress Bar (enrolled students) ────────────── */}
             {enrolled && totalLessons > 0 && (
-              <div className="bg-white dark:bg-gray-900 rounded-2xl p-5
-                shadow-sm border border-gray-100 dark:border-gray-800">
+              <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-800">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-gray-900
-                    dark:text-white">
+                  <span className="text-sm font-semibold text-gray-900 dark:text-white">
                     Your Progress
                   </span>
-                  <span className="text-sm font-bold text-blue-600
-                    dark:text-blue-400">
+
+                  <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
                     {progressPct}%
                   </span>
                 </div>
-                <div className="w-full bg-gray-100 dark:bg-gray-800
-                  rounded-full h-2.5">
+
+                <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2.5">
                   <motion.div
                     className="bg-blue-600 h-2.5 rounded-full"
                     initial={{ width: 0 }}
@@ -432,17 +450,21 @@ const CourseDetailPage = () => {
                     transition={{ duration: 0.6, ease: 'easeOut' }}
                   />
                 </div>
+
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                   {completed.size} of {totalLessons} lessons completed
                 </p>
               </div>
             )}
 
+            {/* Reviews Section */}
+            <CourseReviews courseId={id} isEnrolled={enrolled} />
+
             {/* No modules yet message */}
             {!hasModules && canAccessContent && (
-              <div className="bg-white dark:bg-gray-900 rounded-2xl p-10
-                text-center border border-gray-100 dark:border-gray-800">
+              <div className="bg-white dark:bg-gray-900 rounded-2xl p-10 text-center border border-gray-100 dark:border-gray-800">
                 <div className="text-5xl mb-3">🚧</div>
+
                 <p className="text-gray-500 dark:text-gray-400">
                   Course content is being prepared. Check back soon!
                 </p>
@@ -454,36 +476,36 @@ const CourseDetailPage = () => {
           <div className="lg:col-span-1 space-y-4">
 
             {/* Enrollment Card */}
-            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm
-              overflow-hidden border border-gray-100 dark:border-gray-800
-              sticky top-4">
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm overflow-hidden border border-gray-100 dark:border-gray-800 sticky top-4">
 
               {/* Thumbnail */}
               {course.thumbnail ? (
-                <img src={`${SERVER_URL}/${course.thumbnail}`} alt={course.title}
-                  className="w-full h-44 object-cover" />
+                <img
+                  src={`${SERVER_URL}/${course.thumbnail}`}
+                  alt={course.title}
+                  className="w-full h-44 object-cover"
+                />
               ) : (
-                <div className="w-full h-44 bg-gradient-to-br from-blue-500
-                  to-indigo-600 flex items-center justify-center">
+                <div className="w-full h-44 bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
                   <BookOpen size={48} className="text-white opacity-70" />
                 </div>
               )}
 
               <div className="p-5 space-y-4">
-                <div className="text-3xl font-extrabold text-gray-900
-                  dark:text-white">
+                <div className="text-3xl font-extrabold text-gray-900 dark:text-white">
                   {course.price === 0
                     ? <span className="text-green-600">Free</span>
-                    : `$${course.price}`
-                  }
+                    : `$${course.price}`}
                 </div>
 
                 {message && (
-                  <div className={`text-sm px-3 py-2.5 rounded-xl
-                    ${enrolled
-                      ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800'
-                      : 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800'
-                    }`}>
+                  <div
+                    className={`text-sm px-3 py-2.5 rounded-xl ${
+                      enrolled
+                        ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800'
+                        : 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800'
+                    }`}
+                  >
                     {message}
                   </div>
                 )}
@@ -491,63 +513,57 @@ const CourseDetailPage = () => {
                 {!isAdmin && (
                   enrolled ? (
                     <div className="space-y-3">
-                      <div className="w-full text-center bg-green-50
-                        dark:bg-green-900/20 border border-green-200
-                        dark:border-green-800 text-green-700 dark:text-green-400
-                        font-semibold py-3 rounded-xl text-sm">
+                      <div className="w-full text-center bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 font-semibold py-3 rounded-xl text-sm">
                         ✅ Enrolled
                       </div>
-                      <Link to="/dashboard"
-                        className="w-full flex items-center justify-center gap-2
-                          bg-blue-100 dark:bg-blue-900/20 hover:bg-blue-200
-                          dark:hover:bg-blue-900/30 text-blue-700 
-                          dark:text-blue-400 font-semibold py-2 rounded-xl
-                          transition-colors text-sm">
+
+                      <Link
+                        to="/dashboard"
+                        className="w-full flex items-center justify-center gap-2 bg-blue-100 dark:bg-blue-900/20 hover:bg-blue-200 dark:hover:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-semibold py-2 rounded-xl transition-colors text-sm"
+                      >
                         View in My Dashboard
                         <ArrowRight size={14} />
                       </Link>
                     </div>
                   ) : (
-                    <button onClick={handleEnroll} disabled={enrolling}
-                      className="w-full bg-blue-600 hover:bg-blue-700
-                        disabled:bg-blue-300 text-white font-bold py-3
-                        rounded-xl transition-colors">
+                    <button
+                      onClick={handleEnroll}
+                      disabled={enrolling}
+                      className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-bold py-3 rounded-xl transition-colors"
+                    >
                       {enrolling
                         ? 'Enrolling...'
-                        : isLoggedIn ? 'Enroll Now' : 'Login to Enroll'
-                      }
+                        : isLoggedIn ? 'Enroll Now' : 'Login to Enroll'}
                     </button>
                   )
                 )}
 
                 {/* Course stats */}
-                <div className="border-t border-gray-100 dark:border-gray-800
-                  pt-4 space-y-2 text-sm">
-                  <div className="flex items-center justify-between
-                    text-gray-600 dark:text-gray-400">
+                <div className="border-t border-gray-100 dark:border-gray-800 pt-4 space-y-2 text-sm">
+                  <div className="flex items-center justify-between text-gray-600 dark:text-gray-400">
                     <span>📚 Modules</span>
                     <span className="font-medium text-gray-900 dark:text-white">
                       {modules.length}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between
-                    text-gray-600 dark:text-gray-400">
+
+                  <div className="flex items-center justify-between text-gray-600 dark:text-gray-400">
                     <span>🎬 Lessons</span>
                     <span className="font-medium text-gray-900 dark:text-white">
                       {totalLessons}
                     </span>
                   </div>
+
                   {course.duration && (
-                    <div className="flex items-center justify-between
-                      text-gray-600 dark:text-gray-400">
+                    <div className="flex items-center justify-between text-gray-600 dark:text-gray-400">
                       <span>⏱ Duration</span>
                       <span className="font-medium text-gray-900 dark:text-white">
                         {course.duration}
                       </span>
                     </div>
                   )}
-                  <div className="flex items-center justify-between
-                    text-gray-600 dark:text-gray-400">
+
+                  <div className="flex items-center justify-between text-gray-600 dark:text-gray-400">
                     <span>👥 Students</span>
                     <span className="font-medium text-gray-900 dark:text-white">
                       {course.enrolledStudents?.length || 0}
@@ -559,13 +575,10 @@ const CourseDetailPage = () => {
 
             {/* ── Curriculum Sidebar ───────────────────────────── */}
             {hasModules && (
-              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm
-                border border-gray-100 dark:border-gray-800 overflow-hidden">
+              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
 
-                <div className="px-4 py-3 border-b border-gray-100
-                  dark:border-gray-800">
-                  <h3 className="font-semibold text-gray-900 dark:text-white
-                    text-sm">
+                <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+                  <h3 className="font-semibold text-gray-900 dark:text-white text-sm">
                     Course Content
                   </h3>
                 </div>
@@ -576,18 +589,19 @@ const CourseDetailPage = () => {
                       {/* Module header */}
                       <button
                         onClick={() => toggleModule(mod._id)}
-                        className="w-full flex items-center gap-2 px-4 py-3
-                          bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100
-                          dark:hover:bg-gray-800 transition-colors text-left">
-                        {expandedMods.has(mod._id)
-                          ? <ChevronDown size={14} className="text-gray-500 flex-shrink-0" />
-                          : <ChevronRight size={14} className="text-gray-500 flex-shrink-0" />
-                        }
+                        className="w-full flex items-center gap-2 px-4 py-3 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
+                      >
+                        {expandedMods.has(mod._id) ? (
+                          <ChevronDown size={14} className="text-gray-500 flex-shrink-0" />
+                        ) : (
+                          <ChevronRight size={14} className="text-gray-500 flex-shrink-0" />
+                        )}
+
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-gray-800
-                            dark:text-white truncate">
+                          <p className="text-xs font-semibold text-gray-800 dark:text-white truncate">
                             {mod.title}
                           </p>
+
                           <p className="text-xs text-gray-400 mt-0.5">
                             {mod.lessons?.length || 0} lessons
                           </p>
@@ -598,29 +612,28 @@ const CourseDetailPage = () => {
                       <AnimatePresence>
                         {expandedMods.has(mod._id) && (
                           <motion.div
-                            initial={{ height: 0    }}
+                            initial={{ height: 0 }}
                             animate={{ height: 'auto' }}
-                            exit={{    height: 0    }}
-                            className="overflow-hidden">
+                            exit={{ height: 0 }}
+                            className="overflow-hidden"
+                          >
                             {mod.lessons?.map((lesson) => {
                               const canAccess = canAccessContent || lesson.isFreePreview;
-                              const isActive  = activeLesson?.lesson._id === lesson._id;
-                              const isDone    = completed.has(lesson._id);
+                              const isActive = activeLesson?.lesson._id === lesson._id;
+                              const isDone = completed.has(lesson._id);
 
-                              return (                            
-
+                              return (
                                 <button
                                   key={lesson._id}
                                   onClick={() => handleLessonClick(lesson, mod._id)}
-                                  className={`w-full flex items-center gap-3
-                                    px-4 py-3 text-left transition-colors
-                                    border-b border-gray-50 dark:border-gray-800/50
-                                    ${isActive
+                                  className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors border-b border-gray-50 dark:border-gray-800/50 ${
+                                    isActive
                                       ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-l-blue-600'
                                       : 'hover:bg-gray-50 dark:hover:bg-gray-800/30'
-                                    }
-                                    ${!canAccess ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}>
-
+                                  } ${
+                                    !canAccess ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
+                                  }`}
+                                >
                                   {/* Status icon */}
                                   <div className="flex-shrink-0">
                                     {isDone ? (
@@ -634,23 +647,27 @@ const CourseDetailPage = () => {
 
                                   {/* Lesson info */}
                                   <div className="flex-1 min-w-0">
-                                    <p className={`text-xs truncate font-medium
-                                      ${isActive
-                                        ? 'text-blue-700 dark:text-blue-400'
-                                        : 'text-gray-700 dark:text-gray-300'
-                                      }`}>
+                                    <p
+                                      className={`text-xs truncate font-medium ${
+                                        isActive
+                                          ? 'text-blue-700 dark:text-blue-400'
+                                          : 'text-gray-700 dark:text-gray-300'
+                                      }`}
+                                    >
                                       {lesson.title}
                                     </p>
+
                                     <div className="flex items-center gap-2 mt-0.5">
                                       {lesson.duration && (
                                         <span className="text-xs text-gray-400">
                                           {lesson.duration}
                                         </span>
                                       )}
+
                                       {lesson.isFreePreview && !enrolled && (
-                                        <span className="text-xs text-green-600
-                                          dark:text-green-400 flex items-center gap-0.5">
-                                          <Eye size={9} /> Preview
+                                        <span className="text-xs text-green-600 dark:text-green-400 flex items-center gap-0.5">
+                                          <Eye size={9} />
+                                          Preview
                                         </span>
                                       )}
                                     </div>
@@ -666,26 +683,24 @@ const CourseDetailPage = () => {
                       {moduleQuizzes[mod._id] && canAccessContent && (
                         <button
                           onClick={() => navigate(`/quiz/${moduleQuizzes[mod._id]._id}`)}
-                          className="w-full flex items-center gap-3 px-4 py-3 text-left
-                          bg-purple-50 dark:bg-purple-900/10 hover:bg-purple-100
-                          dark:hover:bg-purple-900/20 transition-colors border-t
-                          border-purple-100 dark:border-purple-800/30">
-                          <div className="w-5 h-5 rounded-full bg-purple-500 flex items-center
-                            justify-center flex-shrink-0">
+                          className="w-full flex items-center gap-3 px-4 py-3 text-left bg-purple-50 dark:bg-purple-900/10 hover:bg-purple-100 dark:hover:bg-purple-900/20 transition-colors border-t border-purple-100 dark:border-purple-800/30"
+                        >
+                          <div className="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center flex-shrink-0">
                             <span className="text-white text-xs font-bold">?</span>
                           </div>
+
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs font-semibold text-purple-700
-                              dark:text-purple-400">
+                            <p className="text-xs font-semibold text-purple-700 dark:text-purple-400">
                               Module Quiz
                             </p>
+
                             <p className="text-xs text-purple-500 dark:text-purple-500">
                               Pass with {moduleQuizzes[mod._id].passingScore}%
                             </p>
                           </div>
                         </button>
                       )}
-                    </div>                    
+                    </div>
                   ))}
                 </div>
               </div>

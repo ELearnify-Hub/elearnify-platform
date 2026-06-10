@@ -83,6 +83,12 @@ const userSchema = new mongoose.Schema(
       default: ''
     },
 
+    bio: {
+      type: String,
+      default: '',
+      maxlength: [300, 'Bio cannot exceed 300 characters']
+    },
+
     passwordResetToken: {
       type: String,
       default: null

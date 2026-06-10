@@ -81,6 +81,7 @@ app.use('/api/certificates', require('./routes/certificateRoutes'));
 app.use('/api/instructor', require('./routes/instructorRoutes'));
 
 app.use('/api/2fa', require('./routes/twoFactorRoutes'));
+app.use('/api/reviews/:courseId', require('./routes/reviewRoutes'));
 
 // ─── Health Check Route ───────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {

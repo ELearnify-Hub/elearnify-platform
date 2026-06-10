@@ -335,11 +335,15 @@ const verifyLogin = async (req, res) => {
       message: '2FA verified successfully',
       token:   fullToken,
       user: {
-        _id:   user._id,
-        name:  user.name,
+        _id: user._id,
+        name: user.name,
         email: user.email,
-        role:  user.role,
+        role: user.role,
         avatar: user.avatar,
+        profilePicture: user.profilePicture,
+        authProvider: user.authProvider,
+        isApproved: user.isApproved,
+        enrolledCourses: user.enrolledCourses || [],
         twoFactorEnabled: user.twoFactorEnabled
       }
     });
@@ -356,7 +360,7 @@ const verifyLogin = async (req, res) => {
 const get2FAStatus = async (req, res) => {
   try {
     const user = await User.findById(req.user._id)
-      .select('twoFactorEnabled twoFactorVerified twoFactorBackupCodes');
+      .select('twoFactorEnabled twoFactorVerified +twoFactorBackupCodes');
 
     res.status(200).json({
       success:           true,

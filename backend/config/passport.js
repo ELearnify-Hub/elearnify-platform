@@ -39,7 +39,14 @@ passport.use(
         let user = await User.findOne({ googleId });
 
         if (user) {
-          // User has logged in with Google before — just return them
+          // User has logged in with Google before. Refresh the Google avatar URL
+          // without touching profilePicture, which stores a custom uploaded image.
+          if (avatar && user.avatar !== avatar) {
+            user.avatar = avatar;
+            user.authProvider = 'google';
+            await user.save({ validateBeforeSave: false });
+          }
+
           return done(null, user);
         }
 

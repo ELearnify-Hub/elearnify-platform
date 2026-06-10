@@ -2,9 +2,17 @@
 import { Bell, Search } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ThemeToggle from './ThemeToggle';
+import { SERVER_URL } from '../services/api';
 
 const TopBar = ({ title, subtitle }) => {
   const { user } = useAuth();
+
+  const displayAvatar = user?.profilePicture || user?.avatar;
+  const avatarSrc = displayAvatar
+    ? displayAvatar.startsWith('http')
+      ? displayAvatar
+      : `${SERVER_URL}/${displayAvatar}`
+    : '';
 
   return (
     <header className="h-16 bg-[var(--surface-1)] border-b border-[var(--border-light)] flex items-center justify-between px-6 flex-shrink-0 transition-colors duration-200">
@@ -49,10 +57,10 @@ const TopBar = ({ title, subtitle }) => {
 
         {/* Avatar */}
         <div className="w-9 h-9 rounded-xl overflow-hidden bg-blue-600 flex items-center justify-center text-white text-sm font-bold cursor-pointer hover:bg-blue-700 transition-colors">
-          {user?.avatar ? (
+          {avatarSrc ? (
             <img
-              src={user.avatar}
-              alt={user.name}
+              src={avatarSrc}
+              alt={user?.name || 'User'}
               className="w-full h-full object-cover"
               referrerPolicy="no-referrer"
             />

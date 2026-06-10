@@ -107,15 +107,18 @@ export const enrollmentAPI = {
 };
 
 export const authAPI = {
-  register: (data) => API.post('/auth/register', data),
-  login: (data) => API.post('/auth/login', data),
-  getProfile: () => API.get('/auth/profile'),
-  getAllStudents: () => API.get('/auth/students'),
-
-  forgotPassword: (data) => API.post('/auth/forgot-password', data),
+  register:         (data)  => API.post('/auth/register', data),
+  login:            (data)  => API.post('/auth/login',    data),
+  getProfile:       ()      => API.get('/auth/profile'),
+  getAllStudents:    ()      => API.get('/auth/students'),
+  forgotPassword:   (data)  => API.post('/auth/forgot-password',        data),
   verifyResetToken: (token) => API.get(`/auth/verify-reset-token/${token}`),
-  resetPassword: (token, data) =>
-    API.post(`/auth/reset-password/${token}`, data)
+  resetPassword:    (token, data) => API.post(`/auth/reset-password/${token}`, data),
+  getStats:         ()      => API.get('/auth/stats'),
+  changePassword:   (data)  => API.put('/auth/change-password', data),
+  updateProfile:    (formData) => API.put('/auth/profile', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
 };
 
 export const moduleAPI = {
@@ -201,6 +204,13 @@ export const twoFactorAPI = {
   disable:              (data)   => API.delete('/2fa/disable',               { data }),
   verifyLogin:          (data)   => API.post('/2fa/verify-login',            data),
   regenerateBackupCodes:(data)   => API.post('/2fa/regenerate-backup-codes', data)
+};
+
+export const reviewAPI = {
+  get:       (courseId)       => API.get(`/reviews/${courseId}`),
+  getMyReview:(courseId)      => API.get(`/reviews/${courseId}/my-review`),
+  create:    (courseId, data) => API.post(`/reviews/${courseId}`,   data),
+  delete:    (courseId)       => API.delete(`/reviews/${courseId}`)
 };
 
 export default API;

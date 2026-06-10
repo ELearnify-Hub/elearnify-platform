@@ -28,7 +28,9 @@ export const AuthProvider = ({ children }) => {
           const { data } = await authAPI.getProfile();
           // Merge profile data with stored data to get latest avatar etc.
           const storedUser = JSON.parse(savedUser);
-          setUser({ ...storedUser, ...data.user });
+          const freshUser = { ...storedUser, ...data.user };
+          localStorage.setItem('user', JSON.stringify(freshUser));
+          setUser(freshUser);
         } catch (error) {
           localStorage.removeItem('token');
           localStorage.removeItem('user');

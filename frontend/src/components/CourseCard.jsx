@@ -1,5 +1,6 @@
 // components/CourseCard.jsx
 import { Link } from 'react-router-dom';
+import { Star } from 'lucide-react';
 import { SERVER_URL } from '../services/api';
 
 const LEVEL_COLORS = {
@@ -10,7 +11,14 @@ const LEVEL_COLORS = {
 
 const getThumbnailUrl = (thumbnail) => {
   if (!thumbnail) return '';
-  if (thumbnail.startsWith('http://') || thumbnail.startsWith('https://')) return thumbnail;
+
+  if (
+    thumbnail.startsWith('http://') ||
+    thumbnail.startsWith('https://')
+  ) {
+    return thumbnail;
+  }
+
   return `${SERVER_URL}/${thumbnail}`;
 };
 
@@ -25,7 +33,9 @@ const CourseCard = ({ course }) => {
     level,
     price,
     duration,
-    enrolledStudents = []
+    enrolledStudents = [],
+    avgRating = 0,
+    reviewCount = 0
   } = course;
 
   return (
@@ -43,8 +53,14 @@ const CourseCard = ({ course }) => {
           />
         ) : null}
 
-        <div className={`${thumbnail ? 'hidden' : ''} flex h-44 w-full items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600`}>
-          <svg className="h-16 w-16 text-white opacity-60" fill="currentColor" viewBox="0 0 24 24">
+        <div
+          className={`${thumbnail ? 'hidden' : ''} flex h-44 w-full items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600`}
+        >
+          <svg
+            className="h-16 w-16 text-white opacity-60"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
             <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3z" />
           </svg>
         </div>
@@ -59,7 +75,13 @@ const CourseCard = ({ course }) => {
           <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700 dark:bg-blue-900/20 dark:text-blue-400">
             {category}
           </span>
-          <span className={`rounded-full px-2 py-0.5 text-xs ${LEVEL_COLORS[level] || 'bg-[var(--bg-secondary)] text-[var(--text-secondary)]'}`}>
+
+          <span
+            className={`rounded-full px-2 py-0.5 text-xs ${
+              LEVEL_COLORS[level] ||
+              'bg-[var(--bg-secondary)] text-[var(--text-secondary)]'
+            }`}
+          >
             {level}
           </span>
         </div>
@@ -72,10 +94,31 @@ const CourseCard = ({ course }) => {
           {description}
         </p>
 
+        {/* Rating */}
+        {avgRating > 0 && (
+          <div className="mb-2 flex items-center gap-1">
+            <Star size={12} className="fill-yellow-400 text-yellow-400" />
+
+            <span className="text-xs font-semibold text-[var(--text-primary)]">
+              {avgRating}
+            </span>
+
+            <span className="text-xs text-[var(--text-muted)]">
+              ({reviewCount || 0})
+            </span>
+          </div>
+        )}
+
         <div className="mb-4 flex flex-col gap-1 text-xs text-[var(--text-muted)]">
-          <span>👨‍🏫 {typeof instructor === 'object' ? instructor?.name : instructor}</span>
+          <span>
+            👨‍🏫 {typeof instructor === 'object' ? instructor?.name : instructor}
+          </span>
+
           {duration && <span>⏱ {duration}</span>}
-          <span>👥 {enrolledStudents.length} students enrolled</span>
+
+          <span>
+            👥 {enrolledStudents.length} students enrolled
+          </span>
         </div>
 
         <Link

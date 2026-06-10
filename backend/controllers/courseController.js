@@ -2,8 +2,51 @@
 // Business logic for all course operations
 
 const Course = require('../models/Course');
+const Review = require('../models/Review');
 const path = require('path');
 const fs = require('fs');
+
+// ── Helper: attach review stats to course objects ────────────────────────────
+const attachReviewStats = async (courses) => {
+  const list = Array.isArray(courses) ? courses : [courses];
+  const ids = list.map((course) => course._id);
+
+  const stats = await Review.aggregate([
+    { $match: { courseId: { $in: ids }, isApproved: true } },
+    {
+      $group: {
+        _id: '$courseId',
+        avgRating: { $avg: '$rating' },
+        reviewCount: { $sum: 1 }
+      }
+    }
+  ]);
+
+  const statsMap = new Map(
+    stats.map((item) => [
+      item._id.toString(),
+      {
+        avgRating: Number(item.avgRating.toFixed(1)),
+        reviewCount: item.reviewCount
+      }
+    ])
+  );
+
+  const withStats = list.map((course) => {
+    const obj = typeof course.toObject === 'function' ? course.toObject() : course;
+    const courseStats = statsMap.get(obj._id.toString()) || {
+      avgRating: 0,
+      reviewCount: 0
+    };
+
+    return {
+      ...obj,
+      ...courseStats
+    };
+  });
+
+  return Array.isArray(courses) ? withStats : withStats[0];
+};
 
 // ─── @route   GET /api/courses ────────────────────────────────────────────────
 // @desc    Get all published courses (with search and filter)
@@ -54,14 +97,15 @@ const getAllCourses = async (req, res) => {
 
     // Get total count for pagination info
     const total = await Course.countDocuments(filter);
+    const coursesWithReviewStats = await attachReviewStats(courses);
 
     res.status(200).json({
       success: true,
-      count: courses.length,
+      count: coursesWithReviewStats.length,
       total,
       totalPages: Math.ceil(total / limit),
       currentPage: Number(page),
-      courses
+      courses: coursesWithReviewStats
     });
 
   } catch (error) {
@@ -89,10 +133,11 @@ const getCourseById = async (req, res) => {
       });
     }
 
-    // Increment a view or just return the course
+    const courseWithReviewStats = await attachReviewStats(course);
+
     res.status(200).json({
       success: true,
-      course
+      course: courseWithReviewStats
     });
 
   } catch (error) {

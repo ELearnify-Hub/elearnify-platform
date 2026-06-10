@@ -1,19 +1,17 @@
- // controllers/enrollmentController.js
-
-const User = require('../models/User');
+// controllers/enrollmentController.js
 const Course = require('../models/Course');
+const User = require('../models/User');
 
-// ─── @route   POST /api/enrollments/:courseId ─────────────────────────────────
-// @desc    Enroll the logged-in student in a course
-// @access  Private (students only)
-
+// ─── @route   POST /api/enrollments/:courseId ────────────────────────────────
+// @desc    Enroll current user in a course
+// @access  Private
 const enrollInCourse = async (req, res) => {
   try {
-    const courseId = req.params.courseId;
+    const { courseId } = req.params;
     const userId = req.user._id;
 
-    // Check course exists and is published
     const course = await Course.findById(courseId);
+
     if (!course) {
       return res.status(404).json({
         success: false,
@@ -21,17 +19,24 @@ const enrollInCourse = async (req, res) => {
       });
     }
 
-    if (!course.isPublished) {
+    if (!course.isPublished && req.user.role !== 'admin') {
       return res.status(400).json({
         success: false,
         message: 'This course is not available for enrollment'
       });
     }
 
-    // Check if already enrolled - convert to string for comparison
     const user = await User.findById(userId);
-    const alreadyEnrolled = user.enrolledCourses.some(id => 
-      id.toString() === courseId.toString()
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const alreadyEnrolled = user.enrolledCourses.some(
+      (id) => id.toString() === courseId.toString()
     );
 
     if (alreadyEnrolled) {
@@ -41,17 +46,14 @@ const enrollInCourse = async (req, res) => {
       });
     }
 
-    // Add course to user's enrolledCourses array
-    const updatedUser = await User.findByIdAndUpdate(userId, {
-      $addToSet: { enrolledCourses: courseId } // $addToSet prevents duplicates
-    }, { new: true });
+    await User.findByIdAndUpdate(userId, {
+      $addToSet: { enrolledCourses: courseId }
+    });
 
-    // Add user to course's enrolledStudents array
     await Course.findByIdAndUpdate(courseId, {
       $addToSet: { enrolledStudents: userId }
     });
 
-    console.log(`User ${userId} enrolled in course ${courseId}`);
     res.status(200).json({
       success: true,
       message: `Successfully enrolled in "${course.title}"`
@@ -59,6 +61,7 @@ const enrollInCourse = async (req, res) => {
 
   } catch (error) {
     console.error('Enroll error:', error);
+
     res.status(500).json({
       success: false,
       message: 'Server error during enrollment'
@@ -69,7 +72,6 @@ const enrollInCourse = async (req, res) => {
 // ─── @route   GET /api/enrollments/my-courses ────────────────────────────────
 // @desc    Get all courses the logged-in user is enrolled in
 // @access  Private
-
 const getMyEnrolledCourses = async (req, res) => {
   try {
     const user = await User.findById(req.user._id)
@@ -85,9 +87,6 @@ const getMyEnrolledCourses = async (req, res) => {
       });
     }
 
-    console.log(`Fetched ${user.enrolledCourses.length} courses for user ${req.user._id}`);
-    console.log('Enrolled courses:', user.enrolledCourses);
-
     res.status(200).json({
       success: true,
       count: user.enrolledCourses.length,
@@ -96,6 +95,7 @@ const getMyEnrolledCourses = async (req, res) => {
 
   } catch (error) {
     console.error('Get enrolled courses error:', error);
+
     res.status(500).json({
       success: false,
       message: 'Server error fetching enrolled courses'
@@ -103,17 +103,56 @@ const getMyEnrolledCourses = async (req, res) => {
   }
 };
 
-// ─── @route   DELETE /api/enrollments/:courseId ───────────────────────────────
-// @desc    Unenroll from a course
+// ─── @route   DELETE /api/enrollments/:courseId ──────────────────────────────
+// @desc    Unenroll current user from a course
 // @access  Private
-
-const unenrollFromCourse = async (req, res) => {
+const unenrollCourse = async (req, res) => {
   try {
-    const courseId = req.params.courseId;
+    const { courseId } = req.params;
     const userId = req.user._id;
 
+    const course = await Course.findById(courseId);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Course creators should manage their own course, not unenroll from it.
+    if (
+      course.createdBy &&
+      course.createdBy.toString() === userId.toString()
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: 'You cannot unenroll from a course you created.'
+      });
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const isEnrolled = user.enrolledCourses.some(
+      (id) => id.toString() === courseId.toString()
+    );
+
+    if (!isEnrolled) {
+      return res.status(400).json({
+        success: false,
+        message: 'You are not enrolled in this course'
+      });
+    }
+
     await User.findByIdAndUpdate(userId, {
-      $pull: { enrolledCourses: courseId }   // $pull removes the item from array
+      $pull: { enrolledCourses: courseId }
     });
 
     await Course.findByIdAndUpdate(courseId, {
@@ -122,11 +161,12 @@ const unenrollFromCourse = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Successfully unenrolled from course'
+      message: 'Unenrolled from course successfully'
     });
 
   } catch (error) {
     console.error('Unenroll error:', error);
+
     res.status(500).json({
       success: false,
       message: 'Server error during unenrollment'
@@ -137,5 +177,7 @@ const unenrollFromCourse = async (req, res) => {
 module.exports = {
   enrollInCourse,
   getMyEnrolledCourses,
-  unenrollFromCourse
+  unenrollCourse,
+  // Backward-compatible alias in case older code imports this name
+  unenrollFromCourse: unenrollCourse
 };

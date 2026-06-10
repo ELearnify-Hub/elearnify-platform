@@ -5,12 +5,20 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { GraduationCap, Menu, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ThemeToggle from './ThemeToggle';
+import { SERVER_URL } from '../services/api';
 
 const Navbar = () => {
   const { isLoggedIn, isAdmin, user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const displayAvatar = user?.profilePicture || user?.avatar;
+  const avatarSrc = displayAvatar
+    ? displayAvatar.startsWith('http')
+      ? displayAvatar
+      : `${SERVER_URL}/${displayAvatar}`
+    : '';
 
   const handleLogout = () => {
     logout();
@@ -85,10 +93,10 @@ const Navbar = () => {
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2 rounded-xl border border-[var(--border-light)] bg-[var(--surface-1)] px-2 py-1.5">
                   <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-blue-600 text-sm font-bold text-white">
-                    {user?.avatar ? (
+                    {avatarSrc ? (
                       <img
-                        src={user.avatar}
-                        alt={user.name}
+                        src={avatarSrc}
+                        alt={user?.name || 'User'}
                         className="h-full w-full object-cover"
                         referrerPolicy="no-referrer"
                       />

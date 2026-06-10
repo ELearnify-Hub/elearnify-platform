@@ -19,6 +19,7 @@ import InstructorDashboard from './pages/InstructorDashboard';
 import InstructorCourseFormPage from './pages/InstructorCourseFormPage';
 import OAuthCallbackPage from './pages/OAuthCallbackPage';
 import SecuritySettingsPage from './pages/SecuritySettingsPage';
+import ProfilePage from './pages/ProfilePage';
 
 const DASHBOARD_PATHS = [
   '/dashboard',
@@ -32,6 +33,7 @@ const DASHBOARD_PATHS = [
 
 const AppShell = () => {
   const location = useLocation();
+
   const isDashboard = DASHBOARD_PATHS.some((path) =>
     location.pathname.startsWith(path)
   );
@@ -66,6 +68,24 @@ const AppShell = () => {
             element={
               <ProtectedRoute>
                 <MyCoursesPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/security"
+            element={
+              <ProtectedRoute>
+                <SecuritySettingsPage />
               </ProtectedRoute>
             }
           />
@@ -114,16 +134,6 @@ const AppShell = () => {
               </ProtectedRoute>
             }
           />
-
-          <Route
-            path="/security"
-            element={
-              <ProtectedRoute>
-                <SecuritySettingsPage />
-              </ProtectedRoute>
-            }
-          />
-
         </Routes>
       </main>
 

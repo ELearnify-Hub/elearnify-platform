@@ -352,11 +352,21 @@ const LoginPage = () => {
   const [step,      setStep]      = useState('credentials'); // credentials | 2fa
   const [tempToken, setTempToken] = useState('');
 
-  // Handle OAuth errors
+  // Handle OAuth errors and Google OAuth 2FA handoff
   useEffect(() => {
-    const params    = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(window.location.search);
     const oauthError = params.get('error');
+    const requires2FA = params.get('requires2FA');
+    const urlTempToken = params.get('tempToken');
+
     if (oauthError) {
+      window.history.replaceState({}, document.title, '/login');
+      return;
+    }
+
+    if (requires2FA === 'true' && urlTempToken) {
+      setTempToken(urlTempToken);
+      setStep('2fa');
       window.history.replaceState({}, document.title, '/login');
     }
   }, []);

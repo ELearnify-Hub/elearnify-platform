@@ -9,24 +9,26 @@ import {
   PlusCircle, Shield
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { SERVER_URL } from '../services/api';
 
 // ── Nav items per role ────────────────────────────────────────────────────────
 const STUDENT_NAV = [
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-  { icon: BookOpen, label: 'All Courses', path: '/courses' },
-  { icon: PlayCircle, label: 'My Learning', path: '/my-courses' },
-  { icon: Award, label: 'Certificates', path: '/certificates' },
-  { icon: User, label: 'Profile', path: '/profile' },
-  { icon: Shield, label: 'Security', path: '/security' }
+  { icon: LayoutDashboard, label: 'Dashboard',  path: '/dashboard'  },
+  { icon: BookOpen,        label: 'All Courses', path: '/courses'    },
+  { icon: PlayCircle,      label: 'My Learning', path: '/my-courses' },
+  { icon: Award,           label: 'Certificates',path: '/certificates'},
+  { icon: User,            label: 'Profile',     path: '/profile'    },
+  { icon: Shield,          label: 'Security',    path: '/security'   },
 ];
 
 const INSTRUCTOR_NAV = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/instructor' },
   { icon: BookOpen, label: 'My Courses', path: '/instructor/courses' },
+  { icon: PlayCircle, label: 'My Learning', path: '/my-courses' },
   { icon: PlusCircle, label: 'New Course', path: '/instructor/courses/new' },
   { icon: Users, label: 'My Students', path: '/instructor/students' },
   { icon: BarChart3, label: 'Analytics', path: '/instructor/analytics' },
-  { icon: User, label: 'Profile', path: '/instructor/profile' },
+  { icon: User, label: 'Profile', path: '/profile' },
   { icon: Shield, label: 'Security', path: '/security' }
 ];
 
@@ -37,6 +39,7 @@ const ADMIN_NAV = [
   { icon: Users, label: 'Students', path: '/admin/students' },
   { icon: BarChart3, label: 'Analytics', path: '/admin/analytics' },
   { icon: Settings, label: 'Settings', path: '/admin/settings' },
+  { icon: User, label: 'Profile', path: '/profile' },
   { icon: Shield, label: 'Security', path: '/security' }
 ];
 
@@ -48,6 +51,13 @@ const Sidebar = () => {
   const navigate = useNavigate();
 
   const isInstructor = user?.role === 'instructor';
+
+  const displayAvatar = user?.profilePicture || user?.avatar;
+  const avatarSrc = displayAvatar
+    ? displayAvatar.startsWith('http')
+      ? displayAvatar
+      : `${SERVER_URL}/${displayAvatar}`
+    : '';
 
   const navItems = isAdmin
     ? ADMIN_NAV
@@ -144,10 +154,10 @@ const Sidebar = () => {
         >
           {/* Avatar */}
           <div className="w-8 h-8 rounded-full overflow-hidden bg-blue-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-            {user?.avatar ? (
+            {avatarSrc ? (
               <img
-                src={user.avatar}
-                alt={user.name}
+                src={avatarSrc}
+                alt={user?.name || 'User'}
                 className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
               />
