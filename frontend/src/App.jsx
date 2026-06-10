@@ -20,6 +20,7 @@ import InstructorCourseFormPage from './pages/InstructorCourseFormPage';
 import OAuthCallbackPage from './pages/OAuthCallbackPage';
 import SecuritySettingsPage from './pages/SecuritySettingsPage';
 import ProfilePage from './pages/ProfilePage';
+import SearchPage from './pages/SearchPage';
 
 const DASHBOARD_PATHS = [
   '/dashboard',
@@ -53,6 +54,7 @@ const AppShell = () => {
           <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
           <Route path="/verify/:certificateId" element={<CertificateVerifyPage />} />
           <Route path="/auth/callback" element={<OAuthCallbackPage />} />
+          <Route path="/search" element={<SearchPage />} />
 
           <Route
             path="/dashboard"

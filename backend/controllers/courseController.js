@@ -54,66 +54,65 @@ const attachReviewStats = async (courses) => {
 
 const getAllCourses = async (req, res) => {
   try {
-    // Extract query parameters for search/filter
-    // e.g., /api/courses?search=react&category=Web Development&level=Beginner
     const {
-      search,
-      category,
-      level,
-      page = 1,
-      limit = 10
+      search, category, level,
+      minPrice, maxPrice, sortBy,
+      page = 1, limit = 12
     } = req.query;
 
-    // Build a dynamic filter object
-    // If admin is requesting, show all courses including drafts
-    // req.user is set by protect middleware (undefined for public requests)
     let filter = req.user?.role === 'admin' ? {} : { isPublished: true };
 
-    // If search term provided, use MongoDB text search
+    // Text search
     if (search) {
-      filter.$text = { $search: search };
+      filter.$or = [
+        { title:       { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { instructor:  { $regex: search, $options: 'i' } }
+      ];
     }
 
-    // If category filter provided
-    if (category) {
-      filter.category = category;
+    if (category && category !== 'All') filter.category = category;
+    if (level    && level    !== 'All') filter.level    = level;
+
+    // Price filter
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      filter.price = {};
+      if (minPrice !== undefined) filter.price.$gte = Number(minPrice);
+      if (maxPrice !== undefined) filter.price.$lte = Number(maxPrice);
     }
 
-    // If level filter provided
-    if (level) {
-      filter.level = level;
-    }
+    // Sort options
+    const sortOptions = {
+      newest:   { createdAt: -1 },
+      oldest:   { createdAt:  1 },
+      popular:  { 'enrolledStudents': -1 },
+      'price-low':  { price:  1 },
+      'price-high': { price: -1 }
+    };
+    const sort = sortOptions[sortBy] || { createdAt: -1 };
 
-    // Calculate how many documents to skip (for pagination)
-    const skip = (Number(page) - 1) * Number(limit);
+    const skip  = (Number(page) - 1) * Number(limit);
+    const total = await Course.countDocuments(filter);
 
-    // Execute query with pagination
     const courses = await Course.find(filter)
-      .select('-videos -pdfs')        // Don't return file details in list view
-      .populate('createdBy', 'name')  // Show creator's name
-      .sort({ createdAt: -1 })        // Newest first
+      .select('-modules')
+      .populate('createdBy', 'name')
+      .sort(sort)
       .skip(skip)
       .limit(Number(limit));
 
-    // Get total count for pagination info
-    const total = await Course.countDocuments(filter);
-    const coursesWithReviewStats = await attachReviewStats(courses);
-
     res.status(200).json({
       success: true,
-      count: coursesWithReviewStats.length,
+      count:      courses.length,
       total,
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.ceil(total / Number(limit)),
       currentPage: Number(page),
-      courses: coursesWithReviewStats
+      courses
     });
 
   } catch (error) {
     console.error('Get courses error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error fetching courses'
-    });
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 
