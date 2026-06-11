@@ -1,5 +1,16 @@
 import { useState } from 'react';
-import { Bot, Send, Sparkles, Lightbulb, BookOpen, HelpCircle } from 'lucide-react';
+import {
+  Bot,
+  Send,
+  Sparkles,
+  Lightbulb,
+  BookOpen,
+  HelpCircle,
+  Award,
+  Video,
+  MessageCircle,
+  ClipboardCheck
+} from 'lucide-react';
 import { aiAPI } from '../services/api';
 import AIRecommendationCards from '../components/AIRecommendationCards';
 
@@ -7,17 +18,32 @@ const starterPrompts = [
   {
     icon: BookOpen,
     title: 'Recommend courses',
-    prompt: 'Recommend the best courses for me to continue learning.'
+    prompt: 'Recommend the best courses for me from ELearnify.'
   },
   {
     icon: Lightbulb,
     title: 'Create study plan',
-    prompt: 'Create a simple study plan for this week.'
+    prompt: 'Create a 7-day study plan for me.'
   },
   {
-    icon: HelpCircle,
-    title: 'Explain platform',
-    prompt: 'Explain how I should use ELearnify effectively.'
+    icon: ClipboardCheck,
+    title: 'Prepare for quiz',
+    prompt: 'Help me prepare for my next quiz.'
+  },
+  {
+    icon: Award,
+    title: 'Explain certificates',
+    prompt: 'How do certificates work on ELearnify?'
+  },
+  {
+    icon: Video,
+    title: 'Live class help',
+    prompt: 'How can I join a live class?'
+  },
+  {
+    icon: MessageCircle,
+    title: 'Contact support',
+    prompt: 'I need help contacting support.'
   }
 ];
 
@@ -25,7 +51,7 @@ const AIAssistantPage = () => {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      text: 'Welcome to ELearnify AI Assistant. I can help with courses, quizzes, certificates, study plans, and platform guidance.'
+      text: 'Welcome to ELearnify AI Assistant. I can help with courses, quizzes, certificates, study plans, live classes, and platform guidance.'
     }
   ]);
 
@@ -59,7 +85,9 @@ const AIAssistantPage = () => {
         ...prev,
         {
           role: 'assistant',
-          text: error?.response?.data?.message || 'Something went wrong while contacting AI.'
+          text:
+            error?.response?.data?.message ||
+            'Something went wrong while contacting AI.'
         }
       ]);
     } finally {
@@ -80,9 +108,13 @@ const AIAssistantPage = () => {
                 </span>
               </div>
 
-              <h1 className="text-3xl font-bold md:text-4xl">ELearnify AI Assistant</h1>
+              <h1 className="text-3xl font-bold md:text-4xl">
+                ELearnify AI Assistant
+              </h1>
+
               <p className="mt-3 max-w-2xl text-blue-100">
-                Get help with courses, quizzes, study planning, recommendations, and platform actions in one place.
+                Get help with courses, quizzes, study planning, recommendations,
+                live classes, certificates, and platform actions in one place.
               </p>
             </div>
 
@@ -97,8 +129,13 @@ const AIAssistantPage = () => {
         <section className="grid gap-6 lg:grid-cols-[1fr_340px]">
           <div className="overflow-hidden rounded-3xl border border-[var(--border-light)] bg-[var(--surface-1)] shadow-[var(--shadow-sm)]">
             <div className="border-b border-[var(--border-light)] p-5">
-              <h2 className="text-lg font-bold text-[var(--text-primary)]">Chat with ELearnify AI</h2>
-              <p className="text-sm text-[var(--text-secondary)]">Ask learning-related questions and get helpful guidance.</p>
+              <h2 className="text-lg font-bold text-[var(--text-primary)]">
+                Chat with ELearnify AI
+              </h2>
+
+              <p className="text-sm text-[var(--text-secondary)]">
+                Ask learning-related questions and get helpful guidance.
+              </p>
             </div>
 
             <div className="h-[440px] space-y-4 overflow-y-auto bg-[var(--bg-secondary)] p-5">
@@ -146,7 +183,9 @@ const AIAssistantPage = () => {
           </div>
 
           <aside className="rounded-3xl border border-[var(--border-light)] bg-[var(--surface-1)] p-5 shadow-[var(--shadow-sm)]">
-            <h3 className="mb-4 font-bold text-[var(--text-primary)]">Try asking</h3>
+            <h3 className="mb-4 font-bold text-[var(--text-primary)]">
+              Try asking
+            </h3>
 
             <div className="space-y-3">
               {starterPrompts.map((item) => {
@@ -164,7 +203,9 @@ const AIAssistantPage = () => {
                       <span className="font-semibold">{item.title}</span>
                     </div>
 
-                    <p className="text-sm text-[var(--text-secondary)]">{item.prompt}</p>
+                    <p className="text-sm text-[var(--text-secondary)]">
+                      {item.prompt}
+                    </p>
                   </button>
                 );
               })}

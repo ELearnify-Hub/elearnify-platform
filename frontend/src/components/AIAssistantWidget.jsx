@@ -5,9 +5,10 @@ import { aiAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 const quickPrompts = [
-  'Recommend what I should learn next',
-  'Explain how to use this page',
-  'Help me prepare for a quiz'
+  "What should I learn next?",
+  "How do I join live classes?",
+  "Help me prepare for a quiz",
+  "How do I contact support?",
 ];
 
 const AIAssistantWidget = () => {

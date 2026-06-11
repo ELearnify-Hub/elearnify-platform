@@ -228,4 +228,54 @@ export const aiAPI = {
   quizIdeas: (data) => API.post('/ai/quiz-ideas', data)
 };
 
+export const liveClassAPI = {
+  getAll: (params) => API.get('/live-classes', { params }),
+  getById: (id) => API.get(`/live-classes/${id}`),
+  create: (data) => API.post('/live-classes', data),
+  update: (id, data) => API.put(`/live-classes/${id}`, data),
+  updateStatus: (id, status) => API.patch(`/live-classes/${id}/status`, { status }),
+  delete: (id) => API.delete(`/live-classes/${id}`)
+};
+
+export const contactAPI = {
+  send: (data) => API.post('/contact', data),
+  getAll: () => API.get('/contact'),
+  updateStatus: (id, status) => API.patch(`/contact/${id}/status`, { status })
+};
+
+export const getLiveClasses = async (params) => {
+  const response = await liveClassAPI.getAll(params);
+  return response.data;
+};
+
+export const getLiveClassById = async (id) => {
+  const response = await liveClassAPI.getById(id);
+  return response.data;
+};
+
+export const createLiveClass = async (liveClassData) => {
+  const response = await liveClassAPI.create(liveClassData);
+  return response.data;
+};
+
+export const updateLiveClass = async (id, liveClassData) => {
+  const response = await liveClassAPI.update(id, liveClassData);
+  return response.data;
+};
+
+export const updateLiveClassStatus = async (id, status) => {
+  const response = await liveClassAPI.updateStatus(id, status);
+  return response.data;
+};
+
+export const deleteLiveClass = async (id) => {
+  const response = await liveClassAPI.delete(id);
+  return response.data;
+};
+
+export const sendContactMessage = async (messageData) => {
+  const response = await contactAPI.send(messageData);
+  return response.data;
+};
+
 export default API;

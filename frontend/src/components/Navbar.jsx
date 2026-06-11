@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GraduationCap, Menu, X, Search, Bot } from 'lucide-react';
+import { GraduationCap, Menu, X, Search, Bot, Video } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ThemeToggle from './ThemeToggle';
 import { SERVER_URL } from '../services/api';
@@ -76,6 +76,25 @@ const Navbar = () => {
               Courses
             </Link>
 
+            <Link to="/live-classes" className={navLinkClass('/live-classes')}>
+              <span className="inline-flex items-center gap-1.5">
+                <Video size={15} />
+                Live Classes
+              </span>
+            </Link>
+
+            {!isLoggedIn && (
+              <>
+                <Link to="/about" className={navLinkClass('/about')}>
+                  About
+                </Link>
+
+                <Link to="/contact" className={navLinkClass('/contact')}>
+                  Contact
+                </Link>
+              </>
+            )}
+
             {isLoggedIn && !isAdmin && user?.role !== 'instructor' && (
               <Link to="/dashboard" className={navLinkClass('/dashboard')}>
                 My Learning
@@ -102,7 +121,6 @@ const Navbar = () => {
                 </span>
               </Link>
             )}
-
           </div>
 
           {/* Desktop right side */}
@@ -232,6 +250,34 @@ const Navbar = () => {
                   Courses
                 </Link>
 
+                <Link
+                  to="/live-classes"
+                  onClick={() => setMenuOpen(false)}
+                  className={navLinkClass('/live-classes')}
+                >
+                  Live Classes
+                </Link>
+
+                {!isLoggedIn && (
+                  <>
+                    <Link
+                      to="/about"
+                      onClick={() => setMenuOpen(false)}
+                      className={navLinkClass('/about')}
+                    >
+                      About
+                    </Link>
+
+                    <Link
+                      to="/contact"
+                      onClick={() => setMenuOpen(false)}
+                      className={navLinkClass('/contact')}
+                    >
+                      Contact
+                    </Link>
+                  </>
+                )}
+
                 {isLoggedIn && user?.role === 'student' && (
                   <Link
                     to="/dashboard"
@@ -271,7 +317,6 @@ const Navbar = () => {
                     AI Assistant
                   </Link>
                 )}
-
 
                 <div className="border-t border-[var(--border-light)] pt-3">
                   {!isLoggedIn ? (

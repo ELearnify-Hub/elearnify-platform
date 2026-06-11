@@ -11,34 +11,48 @@ const cleanAIJson = (text) => {
 };
 
 const buildSystemPrompt = ({ user, message, pageContext, courses }) => {
-  const courseList = courses?.length
-    ? courses
-        .map((course, index) => (
-          `${index + 1}. ${course.title} - ${course.category || 'General'} - ${course.level || 'Beginner'}`
-        ))
-        .join('\n')
-    : 'No course data available.';
+  const courseList =
+    courses && courses.length > 0
+      ? courses
+          .map(
+            (course, index) =>
+              `${index + 1}. ${course.title} | ${course.category || 'General'} | ${course.level || 'Beginner'}`
+          )
+          .join('\n')
+      : 'No courses available.';
 
   return `
-You are ELearnify AI Assistant, a helpful learning assistant inside an e-learning platform.
+You are ELearnify AI Assistant, a smart learning assistant inside an e-learning platform.
 
-User details:
-Name: ${user?.name || 'Learner'}
+Your job:
+- Help students learn better.
+- Help instructors create better courses and quizzes.
+- Help admins improve the platform.
+- Recommend courses only from the available course list.
+- Guide users to useful app pages like Courses, Live Classes, Certificates, Contact, About, and Dashboard.
+- Understand that live classes can use ELearnify built-in live room, Google Meet links, Zoom links, or custom meeting links.
+- Students can join live classes. Instructors and admins can create, start, manage, or complete live classes.
+- If a user needs human help, ask them to use the Contact page and explain what details to include.
+- Keep answers clear, friendly, and short.
+
+User:
+Name: ${user?.name || 'User'}
 Role: ${user?.role || 'student'}
-Current page/context: ${pageContext || 'General'}
+Current page: ${pageContext || 'General'}
 
-Available published courses:
+Available courses:
 ${courseList}
 
-Rules:
-- Keep answers short, clear, practical, and beginner-friendly.
-- Focus only on learning, courses, quizzes, progress, certificates, dashboards, and platform help.
-- If the user is a student, help them study and recommend what to learn next.
-- If the user is an instructor, help with course outlines, lessons, quiz questions, and content improvements.
-- If the user is an admin, help with platform insights, course quality, students, instructors, and improvements.
-- Do not pretend to access data that is not provided.
+Response style:
+- Use simple language.
+- Use short sections.
+- Give practical steps.
 - Do not give unrelated answers.
-- When an action requires clicking in the app, guide the user to the correct page.
+- If the user asks for help/support, suggest using the Contact Us page.
+- If the user asks for live learning, suggest checking Live Classes and explain that students join while instructors/admins can start sessions.
+- If the user asks what to study, recommend a course or study plan.
+- For instructors, suggest course outlines, quiz ideas, live class agenda points, and lesson improvements.
+- For admins, suggest platform improvements, support handling, course quality ideas, and dashboard insights.
 
 User message:
 ${message}
@@ -86,9 +100,10 @@ const askAI = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: error.message === 'GEMINI_API_KEY is missing in backend .env'
-        ? error.message
-        : 'AI assistant failed to respond'
+      message:
+        error.message === 'GEMINI_API_KEY is missing in backend .env'
+          ? error.message
+          : 'AI assistant failed to respond'
     });
   }
 };
@@ -107,15 +122,25 @@ const getAIRecommendations = async (req, res) => {
     }
 
     const courseText = courses
-      .map((course, index) => (
-        `${index + 1}. ${course.title} | ${course.category || 'General'} | ${course.level || 'Beginner'} | ${course.description || 'No description'}`
-      ))
+      .map(
+        (course, index) =>
+          `${index + 1}. ${course.title} | ${course.category || 'General'} | ${
+            course.level || 'Beginner'
+          } | ${course.description || 'No description'}`
+      )
       .join('\n');
 
     const prompt = `
 You are ELearnify AI Assistant.
 
 Recommend exactly 3 courses for this user.
+
+Important rules:
+- Recommend only from the available course list.
+- Keep reasons short and beginner-friendly.
+- Match the recommendation with the user's learning needs.
+- Return only valid JSON.
+- Do not use markdown.
 
 User:
 Name: ${req.user?.name || 'Learner'}
@@ -124,10 +149,14 @@ Role: ${req.user?.role || 'student'}
 Available courses:
 ${courseText}
 
-Return only valid JSON. No markdown.
 Format:
 [
-  { "title": "Course title", "reason": "Short reason", "level": "Beginner", "category": "Category" }
+  {
+    "title": "Course title",
+    "reason": "Short reason",
+    "level": "Beginner",
+    "category": "Category"
+  }
 ]
 `;
 
@@ -148,7 +177,9 @@ Format:
 
     return res.status(200).json({
       success: true,
-      recommendations: Array.isArray(recommendations) ? recommendations.slice(0, 3) : []
+      recommendations: Array.isArray(recommendations)
+        ? recommendations.slice(0, 3)
+        : []
     });
   } catch (error) {
     console.error('AI recommendation error:', error.message);
@@ -206,6 +237,13 @@ You are ELearnify AI Assistant.
 Generate ${safeCount} ${difficulty}-level quiz questions for this topic:
 ${topic}
 
+Rules:
+- Make the questions suitable for an e-learning course.
+- Keep the language simple.
+- Include four options for every question.
+- Include the correct answer.
+- Include a short explanation.
+
 Return the questions in this format:
 
 1. Question
@@ -215,8 +253,6 @@ C. Option
 D. Option
 Correct Answer: A
 Explanation: short explanation
-
-Keep it beginner-friendly and useful for an e-learning course.
 `;
 
     const reply = await generateAIResponse(prompt);

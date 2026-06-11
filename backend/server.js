@@ -68,7 +68,6 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
@@ -79,14 +78,12 @@ app.use('/api/courses/:courseId/modules', require('./routes/moduleRoutes'));
 app.use('/api/quiz', require('./routes/quizRoutes'));
 app.use('/api/certificates', require('./routes/certificateRoutes'));
 app.use('/api/instructor', require('./routes/instructorRoutes'));
-
 app.use('/api/2fa', require('./routes/twoFactorRoutes'));
 app.use('/api/reviews/:courseId', require('./routes/reviewRoutes'));
-
 app.use('/api/notifications', require('./routes/notificationRoutes'));
-
-// AI Assistant Routes
 app.use('/api/ai', require('./routes/aiRoutes'));
+app.use("/api/live-classes", require("./routes/liveClassRoutes"));
+app.use("/api/contact", require("./routes/contactRoutes"));
 
 // ─── Health Check Route ───────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {

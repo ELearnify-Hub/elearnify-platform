@@ -29,6 +29,10 @@ import SearchPage from './pages/SearchPage';
 import NotFoundPage from './pages/NotFoundPage';
 import AIAssistantPage from './pages/AIAssistantPage';
 import AIAssistantWidget from './components/AIAssistantWidget';
+import LiveClassesPage from "./pages/LiveClassesPage";
+import LiveClassRoomPage from "./pages/LiveClassRoomPage";
+import ContactUsPage from "./pages/ContactUsPage";
+import AboutUsPage from "./pages/AboutUsPage";
 
 const DASHBOARD_PATHS = [
   '/dashboard',
@@ -66,6 +70,9 @@ const AppShell = () => {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
           <Route path="/auth/callback" element={<OAuthCallbackPage />} />
+
+          <Route path="/contact" element={<ContactUsPage />} />
+          <Route path="/about" element={<AboutUsPage />} />
 
           {/* Certificate Verification */}
           <Route
@@ -171,6 +178,25 @@ const AppShell = () => {
 
           {/* 404 Route */}
           <Route path="*" element={<NotFoundPage />} />
+
+          <Route
+            path="/live-classes"
+            element={
+              <ProtectedRoute>
+                <LiveClassesPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/live-classes/:id"
+            element={
+              <ProtectedRoute>
+                <LiveClassRoomPage />
+              </ProtectedRoute>
+            }
+          />
+
         </Routes>
       </main>
 

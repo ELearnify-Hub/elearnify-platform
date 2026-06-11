@@ -61,6 +61,7 @@ export const AuthProvider = ({ children }) => {
   const isLoggedIn = !!user;                    // true if user exists
   const isAdmin    = user?.role === 'admin';    // true if user is admin
   const isStudent  = user?.role === 'student';  // true if user is student
+  const isInstructor = user?.role === 'instructor';
 
   // ── Provide Values to All Children ───────────────────────────────────────
   const value = {
@@ -69,6 +70,7 @@ export const AuthProvider = ({ children }) => {
     isLoggedIn,
     isAdmin,
     isStudent,
+    isInstructor,
     login,
     logout
   };
